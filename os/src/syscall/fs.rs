@@ -19,7 +19,7 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
 pub fn sys_read(fd: usize,buf: *const u8, len: usize) -> isize{
     match fd{
         FD_STDIN =>{
-            return 0 as iszise;
+            return 0 as isize;
         }
         _ => {
             panic!("Unsupported fd in sys_read!");

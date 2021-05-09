@@ -28,7 +28,7 @@ fn clear_bss() {
 #[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
-    LOG!("[kernel] Hello, world!");
+    LOG!("Hello, world!");
     ERROR!("ERROR test");
     WARN!("WARN test");
     trap::init();
