@@ -3,6 +3,13 @@
 #![feature(global_asm)]
 #![feature(llvm_asm)]
 #![feature(panic_info_message)]
+#![feature(const_in_array_repeat_expressions)]
+#![feature(alloc_error_handler)]
+
+extern crate alloc;
+
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 mod console;
@@ -11,7 +18,9 @@ mod sbi;
 mod syscall;
 mod trap;
 mod batch;
-
+mod config;
+//mod mmu;
+mod mmu_;
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
 
@@ -31,6 +40,8 @@ pub fn rust_main() -> ! {
     LOG!("Hello, world!");
     ERROR!("ERROR test");
     WARN!("WARN test");
+    mmu_::init_heap();
+    mmu_::init_frame_allocator();
     trap::init();
     batch::init();
     batch::run_next_app();
