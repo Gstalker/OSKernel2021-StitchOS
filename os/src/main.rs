@@ -20,7 +20,7 @@ mod trap;
 mod batch;
 mod config;
 //mod mmu;
-mod mmu_;
+mod mmu;
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
 
@@ -40,8 +40,8 @@ pub fn rust_main() -> ! {
     LOG!("Hello, world!");
     ERROR!("ERROR test");
     WARN!("WARN test");
-    mmu_::init_heap();
-    mmu_::init_frame_allocator();
+    mmu::init_heap();
+    mmu::init_frame_allocator();
     trap::init();
     batch::init();
     batch::run_next_app();
