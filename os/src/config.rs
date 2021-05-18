@@ -16,5 +16,5 @@ pub fn kernel_stack_position(app_id: usize) -> (usize, usize) {
     (bottom, top)
 }
 
-#[cfg(feature = "board_k210")]
+// #[cfg(feature = "board_k210")]
 pub const CLOCK_FREQ: usize = 403000000 / 62;
