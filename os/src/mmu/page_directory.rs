@@ -5,6 +5,7 @@ use super::phys_frame_allocator::{
 };
 use crate::config::{
     PAGE_SIZE,
+    PAGE_SIZE_BITS,
 };
 use alloc::vec::Vec;
 use alloc::vec;
@@ -34,12 +35,12 @@ impl PageDirectory{
     }
     pub fn from_token(satp: usize) -> Self {
         Self {
-            root_page: PhysPageNumber::from(satp & ((1usize << 44) - 1)),
+            root_page: PhysPageNumber::from((satp & ((1usize << 44) - 1)) << PAGE_SIZE_BITS),
             objs: Vec::new(),
         }
     }
     pub fn token(&self) -> usize {
-        8usize << 60 | self.root_page.0
+        (8usize << 60) | (self.root_page.0 >> PAGE_SIZE_BITS)
     }
     //根据虚拟地址找到物理页框。并建立页表映射
     pub fn find_pte_create(&mut self,virt_page_num : VirtPageNumber) -> Option<&mut PageDirectoryEntry>{
@@ -76,6 +77,8 @@ impl PageDirectory{
                 "virtual address {:X} has been mapped!",
                 virt_page_num.0
             );
+            // let temp = PageDirectoryEntry::new(phys_page_num, flags | PDEFlags::V);
+            // *pde = temp;
             *pde = PageDirectoryEntry::new(phys_page_num, flags | PDEFlags::V)
         }
         else{
@@ -97,11 +100,34 @@ impl PageDirectory{
             panic!("Error in unmaping a phys_page to a virtual_addr.at page_directory.rs,pub fn unmap()");
         }
     }
-
+    pub fn find_pte(&mut self,virt_page_num : VirtPageNumber) -> Option<&PageDirectoryEntry>{
+        let idx = virt_page_num.indexes();
+        let mut ppn = self.root_page;
+        let mut result : Option<&PageDirectoryEntry> = None;
+        println!("idx: {:?}",idx);
+        for i in 0..3 {
+            //找到Page Dir Entry，也就是页目录中的一个元素
+            let pde = &ppn.get_pte_array()[idx[i]];
+            if i == 2{
+                println!("pde: {:X}",pde.item);
+                result = Some(pde);
+                break
+            }
+            if !pde.is_valid() {
+                return None;
+            }
+            //下面是报错位置
+            ppn = pde.get_page_number();
+        }
+        result
+    }
+    
     //根据虚拟地址找到物理页框
     pub fn get_phys_frame_by_vpn(&mut self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{
-        if let Some(pde) = self.find_pte_create(vpn){
-            Some(pde.get_page_number())
+        if let Some(pde) = self.find_pte(vpn){
+            let ppn = pde.get_page_number();
+            let a : usize = ppn.into();
+            Some(ppn)
         }
         else{
             None

@@ -29,7 +29,9 @@ impl TaskControlBlock {
     }
     pub fn new(elf_data: &[u8], app_id: usize) -> Self {
         // memory_set with elf program headers/trampoline/trap context/user stack
+        
         let (mut memory_set, user_sp, entry_point) = MemArea::new_from_elf(elf_data);
+        
         let trap_cx_ppn = memory_set
             .get_phys_frame_by_vpn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap();

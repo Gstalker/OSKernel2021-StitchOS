@@ -46,7 +46,6 @@ pub fn rust_main() -> ! {
     println!("[kernel] back to world!");
     //mmu::remap_test();
     trap::init();
-    //trap::enable_interrupt();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
     task::run_first_task();

@@ -75,13 +75,15 @@ impl MemArea{
                 if ph_flags.is_read() { map_perm |= MemSectionPermission::R; }
                 if ph_flags.is_write() { map_perm |= MemSectionPermission::W; }
                 if ph_flags.is_execute() { map_perm |= MemSectionPermission::X; }
+                
                 let map_area = MemSection::new(
-                    start_va.floor(),
-                    end_va.celi(),
+                    start_va,
+                    end_va,
                     map_perm,
                     MemMapType::FRAMED,
                 );
-                max_end_vpn = map_area.end_virt_addr;
+                
+                max_end_vpn = map_area.end_vpn;
                 ma.push(
                     map_area,
                     Some(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize])
@@ -117,7 +119,6 @@ impl MemArea{
         );
     }
     pub fn new_from_kernel() -> Self{ 
-
         let mut ma = MemArea::new();
         //map trampoline
         ma.map_trampoline();
@@ -126,7 +127,7 @@ impl MemArea{
             MemSection::new(
                 (stext as usize).into(),
                 (etext as usize).into(),
-                MemSectionPermission::from_bits((PDEFlags::R | PDEFlags::X).bits()).unwrap(),
+                MemSectionPermission::X | MemSectionPermission::R,
                 MemMapType::DIRECT,
             ),
             None,
@@ -136,7 +137,7 @@ impl MemArea{
             MemSection::new(
                 (srodata as usize).into(),
                 (erodata as usize).into(),
-                MemSectionPermission::from_bits((PDEFlags::R).bits()).unwrap(),
+                MemSectionPermission::R,
                 MemMapType::DIRECT,
             ),
             None,
@@ -146,7 +147,7 @@ impl MemArea{
             MemSection::new(
                 (sdata as usize).into(),
                 (edata as usize).into(),
-                MemSectionPermission::from_bits((PDEFlags::R | PDEFlags::W).bits()).unwrap(),
+                MemSectionPermission::W | MemSectionPermission::R,
                 MemMapType::DIRECT,
             ),
             None,
@@ -156,7 +157,7 @@ impl MemArea{
             MemSection::new(
                 (sbss_with_stack as usize).into(),
                 (ebss as usize).into(),
-                MemSectionPermission::from_bits((PDEFlags::R | PDEFlags::W).bits()).unwrap(),
+                MemSectionPermission::W | MemSectionPermission::R,
                 MemMapType::DIRECT,
             ),
             None,
@@ -166,7 +167,7 @@ impl MemArea{
             MemSection::new(
                 (ekernel as usize).into(),
                 (MEMORY_END as usize).into(),
-                MemSectionPermission::from_bits((PDEFlags::R | PDEFlags::W).bits()).unwrap(),
+                MemSectionPermission::W | MemSectionPermission::R,
                 MemMapType::DIRECT,
             ),
             None,
@@ -182,9 +183,9 @@ impl MemArea{
         sect_buf : Option<&[u8]>,//指针 ： 指向数据，初始化时直接拷贝到对应物理页里头
     ){
         // 录入Section信息
-        let mut ms = MemSection::new(
-            s.floor(),
-            e.celi(),
+        let ms = MemSection::new(
+            s,
+            e,
             perm,
             MemMapType::FRAMED
         );
@@ -208,26 +209,30 @@ impl MemArea{
         if let Some(ptr) = sect_buf{
             ms.copy_data(ptr,&mut self.page_directory);
         }
+        else{}
         //记录该内存段
         self.mem_sections.push(ms);
     }
     pub fn activate(&self) {
         let satp = self.page_directory.token();
-        WARN!("START SATP");
+        // LOG!("satp : {:X}",satp);
+        // WARN!("START SATP");
         unsafe {
             satp::write(satp);
+            // WARN!("WRITE SATP");
             llvm_asm!("sfence.vma" :::: "volatile");
         }
-        LOG!("SUCC SATP");
+        // LOG!("SUCC SATP");
     }
+
     pub fn get_phys_frame_by_vpn(&mut self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{ 
         self.page_directory.get_phys_frame_by_vpn(vpn)
     }
 }
 //结构体 内存段
 pub struct MemSection{
-    start_virt_addr : VirtPageNumber,
-    end_virt_addr   : VirtPageNumber,
+    start_vpn : VirtPageNumber,
+    end_vpn   : VirtPageNumber,
     permission      : MemSectionPermission,
     map_type        : MemMapType,
     frames          : BTreeMap<VirtPageNumber,PhysPageNumber>,
@@ -250,14 +255,14 @@ bitflags! {
 
 impl MemSection{
     pub fn new(
-        s_addr : VirtPageNumber,
-        e_addr : VirtPageNumber,
+        s_addr : VirtAddr,
+        e_addr : VirtAddr,
         perm : MemSectionPermission,
         t : MemMapType
     ) -> Self {
         Self{
-            start_virt_addr : s_addr,
-            end_virt_addr : e_addr,
+            start_vpn : s_addr.floor(),
+            end_vpn : e_addr.celi(),
             permission : perm,
             map_type : t,
             frames : BTreeMap::new(),
@@ -267,18 +272,21 @@ impl MemSection{
     //将数据拷贝到段中
     fn copy_data(&self, data: &[u8],pd : &mut PageDirectory){ 
         //实现思路： 循环遍历虚拟页，逐页面复制
-        let mut virt_addr_iter : usize = self.start_virt_addr.into();
+        let mut virt_addr_iter : usize = self.start_vpn.into();
         let mut i : usize= 0;
         let mut size = data.len();
         while i < data.len(){
             let src_slice_data = &data[i..size.min(i + PAGE_SIZE)];
             if let Some(ppn) = pd.get_phys_frame_by_vpn(virt_addr_iter.into()){
-                let mut ptr = ppn.get_bytes_array();
+                let ptr = &mut ppn.get_bytes_array()[..src_slice_data.len()];
                 ptr.copy_from_slice(src_slice_data);
             }
             else{
                 panic!("Failed in find a physpage by vpn! in mem_section.rs,copy_data()");
             }
+            println!("i : {:X}",i);
+            println!("virtaddr : {:X}",virt_addr_iter);
+            println!("data.len: {:X}",data.len());
             i += PAGE_SIZE;
             virt_addr_iter += PAGE_SIZE;
         }
@@ -297,10 +305,10 @@ impl MemSection{
     fn map_single_frame(&mut self,pd :&mut PageDirectory,vpn : VirtPageNumber){
         let mut ppn : PhysPageNumber;
         match self.map_type{
-            MemMapType::FRAMED =>{
+            MemMapType::DIRECT =>{
                 ppn = PhysPageNumber(vpn.0);
             }
-            MemMapType::DIRECT =>{
+            MemMapType::FRAMED =>{
                 ppn = phys_frame_alloc().unwrap().ppn;
                 self.frames.insert(vpn,ppn);
             }
@@ -310,8 +318,9 @@ impl MemSection{
     }
     // 将这个Section映射到内存中
     fn map(&mut self, pd : &mut PageDirectory){
-        let mut i : usize = self.start_virt_addr.into();
-        while i < self.end_virt_addr.into(){
+        let mut i : usize = self.start_vpn.into();
+        let end : usize = self.end_vpn.into();
+        while i < self.end_vpn.into(){
             self.map_single_frame(
                 pd,
                 VirtPageNumber(i)
@@ -321,8 +330,8 @@ impl MemSection{
     }
     //从内存中回收该section
     fn unmap(&mut self,pd : &mut PageDirectory){
-        let mut i : usize = self.start_virt_addr.into();
-        while i < self.end_virt_addr.into(){
+        let mut i : usize = self.start_vpn.into();
+        while i < self.end_vpn.into(){
             self.unmap_single_frame(
                 pd,
                 VirtPageNumber(i)
@@ -331,10 +340,11 @@ impl MemSection{
         }
     }
 }
+
 pub fn print_kernel_info(){
     println!(".text : {:X} - {:X}",stext as usize,etext as usize);
     println!(".rodata : {:X} - {:X}",srodata as usize,erodata as usize);
     println!(".data : {:X} - {:X}",sdata as usize,edata as usize);
     println!(".bss : {:X} - {:X}",sbss_with_stack as usize,ebss as usize);
-    
+    println!(".ekernel : {:X} ",ekernel as usize);
 }

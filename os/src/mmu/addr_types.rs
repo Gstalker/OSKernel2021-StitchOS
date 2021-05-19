@@ -79,7 +79,7 @@ impl PhysAddr{
         self.0 & !(PAGE_SIZE - 1)
     }
     pub fn celi(&self) -> usize{ 
-        (self.0 & !(PAGE_SIZE - 1)) + PAGE_SIZE
+        (self.0 - 1 + PAGE_SIZE) & !(PAGE_SIZE - 1)
     }
     pub fn is_aligened(&self) -> bool { 
         (self.0 & (PAGE_SIZE - 1)) == 0
@@ -125,7 +125,7 @@ impl VirtAddr{
         VirtPageNumber(self.0 & !(PAGE_SIZE - 1))
     }
     pub fn celi(&self) -> VirtPageNumber{ 
-        VirtPageNumber((self.0 & !(PAGE_SIZE - 1)) + PAGE_SIZE)
+        VirtPageNumber((self.0 - 1 + PAGE_SIZE) & !(PAGE_SIZE - 1))
     }
     pub fn is_aligened(&self) -> bool { 
         (self.0 & (PAGE_SIZE - 1)) == 0
@@ -173,12 +173,12 @@ pub struct PageDirectoryEntry{
 impl PageDirectoryEntry{
     pub fn new(ppn: PhysPageNumber, flags: PDEFlags) -> Self{ 
         PageDirectoryEntry{
-            item : ppn.0 | (flags.bits() as usize)
+            item : (ppn.0 >> 2) | (flags.bits() as usize)
         }
     }
     pub fn get_page_number(&self) -> PhysPageNumber {
         let pn : usize = self.item;
-        (pn & !(PAGE_SIZE - 1)).into()
+        ((pn << 2) & !(PAGE_SIZE - 1)).into()
     }
     pub fn get_flags(&self) -> PDEFlags {
         PDEFlags::from_bits(self.item as u8).unwrap()
@@ -200,9 +200,4 @@ impl PageDirectoryEntry{
             item : 0 as usize,
         }
     }
-}
-
-pub struct VirtPageNumberRange{
-    pub start : VirtPageNumber,
-    pub end   : VirtPageNumber,
 }
