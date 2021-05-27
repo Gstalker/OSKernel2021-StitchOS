@@ -9,6 +9,7 @@ use lazy_static::*;
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
 use alloc::vec::Vec;
+use task::FDTable;
 
 pub use context::TaskContext;
 
@@ -83,6 +84,11 @@ impl TaskManager {
                 inner.tasks[*id].task_status == TaskStatus::Ready
             })
     }
+// have to fix this later - the tasks are not locked so we cannot fetch the entire of it
+    fn get_current_task_fd(&self) -> Option<FDTable> {
+        let inner = self.inner.borrow();
+        return inner.tasks.get(inner.current_task).map(|task| task.fd_table.clone());
+    }
 
     fn get_current_token(&self) -> usize {
         let inner = self.inner.borrow();
@@ -136,6 +142,10 @@ fn mark_current_exited() {
 pub fn suspend_current_and_run_next() {
     mark_current_suspended();
     run_next_task();
+}
+
+pub fn current_task_fd() -> Option<FDTable> {
+    TASK_MANAGER.get_current_task_fd()
 }
 
 pub fn exit_current_and_run_next() {

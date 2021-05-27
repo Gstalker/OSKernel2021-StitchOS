@@ -8,6 +8,12 @@ use crate::mmu::{
 use crate::trap::{TrapContext, trap_handler};
 use crate::config::{TRAP_CONTEXT, kernel_stack_position};
 use super::TaskContext;
+use crate::fs::{File, Stdout, Stdin};
+use alloc::vec::*;
+use alloc::vec;
+use alloc::sync::Arc;
+
+pub type FDTable = Vec<Option<Arc<dyn File + Send + Sync>>>;
 
 pub struct TaskControlBlock {
     pub task_cx_ptr: usize,
@@ -15,6 +21,7 @@ pub struct TaskControlBlock {
     pub memory_set: MemArea,
     pub trap_cx_ppn: PhysPageNumber,
     pub base_size: usize,
+    pub fd_table: FDTable
 }
 
 impl TaskControlBlock {
@@ -54,6 +61,11 @@ impl TaskControlBlock {
             memory_set,
             trap_cx_ppn,
             base_size: user_sp,
+            fd_table: vec![
+                Some(Arc::new(Stdin)),
+                Some(Arc::new(Stdout)),
+                Some(Arc::new(Stdout)), // stderr
+            ]
         };
         // prepare TrapContext in user space
         println!("prepare trap");
