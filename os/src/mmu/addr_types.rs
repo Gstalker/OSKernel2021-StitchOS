@@ -102,7 +102,8 @@ impl PhysPageNumber{
         }
     }
     pub fn get_pte_array(&self) -> &'static mut[PageDirectoryEntry]{
-        let pa : PhysAddr = self.clone().into();
+        println!("addr {}", self.0);
+        let pa: PhysAddr = self.clone().into();
         unsafe{
             core::slice::from_raw_parts_mut(pa.0 as *mut PageDirectoryEntry, 512)
         }
@@ -178,6 +179,7 @@ impl PageDirectoryEntry{
     }
     pub fn get_page_number(&self) -> PhysPageNumber {
         let pn : usize = self.item;
+        println!("self pn {}", pn);
         ((pn << 2) & !(PAGE_SIZE - 1)).into()
     }
     pub fn get_flags(&self) -> PDEFlags {

@@ -7,6 +7,7 @@ use super::phys_frame_allocator::{
 use super::page_directory::{
     PageDirectory,
 };
+use super::FrameItem;
 use crate::config::{
     MEMORY_END,
     PAGE_SIZE,
@@ -66,7 +67,9 @@ impl MemArea{
         let ph_count = elf_header.pt2.ph_count();
         let mut max_end_vpn = VirtPageNumber(0);
         for i in 0..ph_count{
+            println!("ph count {}", i);
             let ph = elf.program_header(i).unwrap();
+            println!("ph count {:?}", ph);
             if ph.get_type().unwrap() == xmas_elf::program::Type::Load {
                 let start_va: VirtAddr = (ph.virtual_addr() as usize).into();
                 let end_va: VirtAddr = ((ph.virtual_addr() + ph.mem_size()) as usize).into();
@@ -75,7 +78,7 @@ impl MemArea{
                 if ph_flags.is_read() { map_perm |= MemSectionPermission::R; }
                 if ph_flags.is_write() { map_perm |= MemSectionPermission::W; }
                 if ph_flags.is_execute() { map_perm |= MemSectionPermission::X; }
-                
+                println!("va {} {}", start_va.0, end_va.0);
                 let map_area = MemSection::new(
                     start_va,
                     end_va,
@@ -90,6 +93,7 @@ impl MemArea{
                 );
             }
         }
+        println!("out of");
         // map user stack with U flags
         let max_end_va: VirtAddr = max_end_vpn.into();
         let mut user_stack_bottom: usize = max_end_va.into();
@@ -109,9 +113,11 @@ impl MemArea{
             MemSectionPermission::R | MemSectionPermission::W,
             MemMapType::FRAMED,
         ), None);
+        println!("elf finish");
         (ma, user_stack_top, elf.header.pt2.entry_point() as usize)
     }
     fn map_trampoline(&mut self){
+        println!("strampoline {:X} {:X} {:X}", strampoline as usize, VirtAddr(TRAMPOLINE as usize).floor().0, TRAMPOLINE as usize);
         self.page_directory.map(
             VirtAddr(TRAMPOLINE as usize).floor(),
             PhysAddr(strampoline as usize).into(),
@@ -204,10 +210,14 @@ impl MemArea{
     }
     //提升代码复用率
     fn push(&mut self,mut ms :MemSection, sect_buf : Option<&[u8]>){
+        println!("start map");
         ms.map(&mut self.page_directory);
+        println!("finish map");
         //复制数据到该内存段
         if let Some(ptr) = sect_buf{
+            println!("cp");
             ms.copy_data(ptr,&mut self.page_directory);
+            println!("cpc");
         }
         else{}
         //记录该内存段
@@ -235,7 +245,7 @@ pub struct MemSection{
     end_vpn   : VirtPageNumber,
     permission      : MemSectionPermission,
     map_type        : MemMapType,
-    frames          : BTreeMap<VirtPageNumber,PhysPageNumber>,
+    frames          : BTreeMap<VirtPageNumber, FrameItem>,
 }
 
 // 段页面类型，是物理内存映射到相同的虚拟地址，还是用户态的映射方法
@@ -278,6 +288,7 @@ impl MemSection{
         while i < data.len(){
             let src_slice_data = &data[i..size.min(i + PAGE_SIZE)];
             if let Some(ppn) = pd.get_phys_frame_by_vpn(virt_addr_iter.into()){
+                println!("write ppn {}", ppn.0);
                 let ptr = &mut ppn.get_bytes_array()[..src_slice_data.len()];
                 ptr.copy_from_slice(src_slice_data);
             }
@@ -286,7 +297,7 @@ impl MemSection{
             }
             println!("i : {:X}",i);
             println!("virtaddr : {:X}",virt_addr_iter);
-            println!("data.len: {:X}",data.len());
+            println!("data.len: {:X} {:X}",data.len(), PAGE_SIZE);
             i += PAGE_SIZE;
             virt_addr_iter += PAGE_SIZE;
         }
@@ -309,8 +320,9 @@ impl MemSection{
                 ppn = PhysPageNumber(vpn.0);
             }
             MemMapType::FRAMED =>{
-                ppn = phys_frame_alloc().unwrap().ppn;
-                self.frames.insert(vpn,ppn);
+                let pf = phys_frame_alloc().unwrap();
+                ppn = pf.ppn;
+                self.frames.insert(vpn,pf);
             }
         }
         let flags : PDEFlags = PDEFlags::from_bits(self.permission.bits).unwrap();

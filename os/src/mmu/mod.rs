@@ -16,6 +16,9 @@ pub use page_directory::{
     translated_byte_buffer,
     PageDirectory,
 };
+pub use phys_frame_allocator::{
+    FrameItem
+};
 pub use addr_types::*;
 
 pub fn init() {

@@ -48,15 +48,18 @@ lazy_static! {
 
 impl TaskManager {
     fn run_first_task(&self) {
+        println!("task start");
         self.inner.borrow_mut().tasks[0].task_status = TaskStatus::Running;
         let next_task_cx_ptr2 = self.inner.borrow().tasks[0].get_task_cx_ptr2();
         let _unused: usize = 0;
+        println!("task start0");
         unsafe {
             __switch(
                 &_unused as *const _,
                 next_task_cx_ptr2,
             );
         }
+        println!("may i out?");
     }
 
     fn mark_current_suspended(&self) {

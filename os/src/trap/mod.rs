@@ -50,6 +50,7 @@ pub fn trap_handler() -> ! {
     let cx = current_trap_cx();
     let scause = scause::read();
     let stval = stval::read();
+    println!("trap handling {:?}", scause.cause());
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
             cx.sepc += 4;
@@ -80,11 +81,13 @@ pub fn trap_return() -> ! {
     set_user_trap_entry();
     let trap_cx_ptr = TRAP_CONTEXT;
     let user_satp = current_user_token();
+    println!("current user {:X}", user_satp);
     extern "C" {
         fn __alltraps();
         fn __restore();
     }
     let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    println!("needle {:X}", restore_va);
     unsafe {
         llvm_asm!("fence.i" :::: "volatile");
         llvm_asm!("jr $0" :: "r"(restore_va), "{a0}"(trap_cx_ptr), "{a1}"(user_satp) :: "volatile");

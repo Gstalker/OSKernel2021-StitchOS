@@ -22,8 +22,10 @@ SECTIONS
         *(.sdata .sdata.*)
     }
     .bss : {
+        start_bss = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)
+        end_bss = .;
     }
     /DISCARD/ : {
         *(.eh_frame)

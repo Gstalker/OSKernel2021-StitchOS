@@ -30,6 +30,7 @@ impl FrameAllocator for PhysFrameAllocator{
     fn alloc(&mut self) -> Option<PhysPageNumber>{
         //如果栈中有未分配的物理页，优先分配
         if let Some(ppn) = self.recycle_stack.pop(){
+            println!("recycle get {}", ppn);
             Some(ppn.into())
         }
         //若栈中没有物理页且物理内存耗尽，返回None
@@ -43,6 +44,7 @@ impl FrameAllocator for PhysFrameAllocator{
         }
     }
     fn dealloc(&mut self, p: PhysPageNumber){
+        println!("dealloc {}", p.0);
         let ppn : usize = p.into();
         //合法检测：ppn是否在栈中或者ppn是处于未被分配的区域
         if ppn > self.head || self.recycle_stack
