@@ -7,6 +7,8 @@
 pub mod console;
 mod syscall;
 mod lang_items;
+#[macro_use]
+extern crate bitflags;
 
 #[no_mangle]
 #[link_section = ".text.entry"]
@@ -42,3 +44,17 @@ pub fn exit(exit_code: i32) -> isize { sys_exit(exit_code) }
 pub fn yield_() -> isize { sys_yield() }
 pub fn get_time() -> isize { sys_get_time() }
 pub fn pipe(pipe_fd: &mut [usize]) -> isize { sys_pipe(pipe_fd) }
+
+bitflags! {
+    pub struct OpenFlags: u32 {
+        const RDONLY = 0;
+        const WRONLY = 1 << 0;
+        const RDWR = 1 << 1;
+        const CREATE = 1 << 9;
+        const TRUNC = 1 << 10;
+    }
+}
+
+pub fn open(path: &str, flags: OpenFlags) -> isize {
+    sys_open(path, flags.bits)
+}

@@ -16,11 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup Rust
-      run: rustup target add riscv64gc-unknown-none-elf &&
-           cargo install cargo-binutils --vers ~0.2 &&
-           rustup component add llvm-tools-preview &&
-           rustup component add rust-src
     - name: Build User & Lib
       run: cd user && make
     - name: Build Integration

@@ -3,6 +3,7 @@ const SYSCALL_EXIT: usize = 93;
 const SYSCALL_YIELD: usize = 124;
 const SYSCALL_GET_TIME: usize = 169;
 const SYSCALL_PIPE: usize = 59;
+const SYSCALL_OPEN: usize = 56;
 
 fn syscall(id: usize, args: [usize; 3]) -> isize {
     let mut ret: isize;
@@ -35,4 +36,9 @@ pub fn sys_get_time() -> isize {
 
 pub fn sys_pipe(pipe: &mut [usize]) -> isize {
     syscall(SYSCALL_PIPE, [pipe.as_mut_ptr() as usize, 0, 0])
+}
+
+
+pub fn sys_open(path: &str, flags: u32) -> isize {
+    syscall(SYSCALL_OPEN, [path.as_ptr() as usize, flags as usize, 0])
 }

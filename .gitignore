@@ -5,5 +5,8 @@ os/Cargo.lock
 os/src/link_app.S
 user/target/*
 user/.idea/*
-user/Cargo.lock
+kfat32/Cargo.lock
+kfat32/target/*
+kfat32/.idea/*
+kfat32/Cargo.lock
 tools/
