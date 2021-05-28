@@ -196,6 +196,16 @@ impl MemArea{
             ),
             None,
         );
+        use crate::config::MMIO;
+        println!("mapping memory-mapped registers");
+        for pair in MMIO {
+            ma.push(MemSection::new(
+                (*pair).0.into(),
+                ((*pair).0 + (*pair).1).into(),
+                MemSectionPermission::R | MemSectionPermission::W,
+                MemMapType::DIRECT,
+            ), None);
+        }
         ma
     }
     // 添加一个分页的段
