@@ -58,6 +58,7 @@ pub fn sys_exec(path: &str) -> isize {
 
 pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
     syscall(SYSCALL_WAITPID, [pid as usize, exit_code as usize, 0])
+}
 pub fn sys_pipe(pipe: &mut [usize]) -> isize {
     syscall(SYSCALL_PIPE, [pipe.as_mut_ptr() as usize, 0, 0])
 }

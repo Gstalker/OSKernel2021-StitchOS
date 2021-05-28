@@ -63,6 +63,7 @@ pub fn rust_main() -> ! {
     println!("inner {:?}", dir);
     println!("inner files {:?}", dir.ls());
     println!("into first task");
+    
     loader::list_apps();
 
     // end of file system test
