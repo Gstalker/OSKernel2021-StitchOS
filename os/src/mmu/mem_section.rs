@@ -124,6 +124,24 @@ impl MemArea{
             PDEFlags::R | PDEFlags::X,
         );
     }
+    pub fn new_from_mem_area(tar:&MemArea) -> Self{
+        let mut mem_area = MemArea::new();
+        mem_area.map_trampoline();
+        //copy data from target. include:
+        // sections,trap_content,user_stack
+        for i in tar.mem_sections.iter(){
+            let copied_section = MemSection::new_from_mem_section(i);
+            mem_area.push(copied_section,None);
+            let mut j : usize = i.start_vpn.into();
+            while j < i.end_vpn.into(){
+                let src : PhysPageNumber = tar.get_phys_frame_by_vpn(j.into()).unwrap().into();
+                let dst : PhysPageNumber = mem_area.get_phys_frame_by_vpn(j.into()).unwrap().into();
+                dst.get_bytes_array().copy_from_slice(src.get_bytes_array());
+                j += PAGE_SIZE;
+            }
+        }
+        mem_area
+    }
     pub fn new_from_kernel() -> Self{ 
         let mut ma = MemArea::new();
         //map trampoline
@@ -205,11 +223,19 @@ impl MemArea{
         // self.mem_sections.push(ms);
         self.push(ms,sect_buf);
     }
+    pub fn remove_framed_section_by_start_vpn(&mut self,vpn : VirtPageNumber){
+        for i in 0..self.mem_sections.len(){
+            if self.mem_sections[i].start_vpn == vpn{
+                self.mem_sections[i].unmap(&mut self.page_directory);
+                self.mem_sections.remove(i);
+            }
+        }
+    }
     pub fn token(&self) -> usize {
         self.page_directory.token()
     }
     //提升代码复用率
-    fn push(&mut self,mut ms :MemSection, sect_buf : Option<&[u8]>){
+    fn push(&mut self,mut ms : MemSection, sect_buf : Option<&[u8]>){
         println!("start map");
         ms.map(&mut self.page_directory);
         println!("finish map");
@@ -234,9 +260,15 @@ impl MemArea{
         }
         // LOG!("SUCC SATP");
     }
+    pub fn recycle_data_pages(&mut self) {
+        self.mem_sections.clear();
+    }
 
-    pub fn get_phys_frame_by_vpn(&mut self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{ 
+    pub fn get_phys_frame_by_vpn(&self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{ 
         self.page_directory.get_phys_frame_by_vpn(vpn)
+    }
+    pub fn get_phys_addr_by_va(&self,va : VirtAddr) -> Option<PhysAddr>{
+        self.page_directory.get_phys_addr_by_va(va)
     }
 }
 //结构体 内存段
@@ -249,6 +281,7 @@ pub struct MemSection{
 }
 
 // 段页面类型，是物理内存映射到相同的虚拟地址，还是用户态的映射方法
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum MemMapType{
     DIRECT,  // VPN == PPN
     FRAMED,  // map PhysPage to virtual addr
@@ -277,6 +310,17 @@ impl MemSection{
             map_type : t,
             frames : BTreeMap::new(),
         }
+    }
+
+    pub fn new_from_mem_section(tar : &MemSection) -> Self {
+        Self{
+            start_vpn : tar.start_vpn,
+            end_vpn : tar.end_vpn,
+            permission : tar.permission,
+            map_type : tar.map_type,
+            frames : BTreeMap::new(),
+        }
+
     }
     //实现loader的关键函数之一
     //将数据拷贝到段中

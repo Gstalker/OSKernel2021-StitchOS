@@ -9,6 +9,7 @@ use crate::config::{
 };
 use alloc::vec::Vec;
 use alloc::vec;
+use alloc::string::String;
 
 //数据结构：根页表
 //root_page指向页框
@@ -104,7 +105,7 @@ impl PageDirectory{
             panic!("Error in unmaping a phys_page to a virtual_addr.at page_directory.rs,pub fn unmap()");
         }
     }
-    pub fn find_pte(&mut self,virt_page_num : VirtPageNumber) -> Option<&PageDirectoryEntry>{
+    pub fn find_pte(&self,virt_page_num : VirtPageNumber) -> Option<&PageDirectoryEntry>{
         let idx = virt_page_num.indexes();
         let mut ppn = self.root_page;
         let mut result : Option<&PageDirectoryEntry> = None;
@@ -133,7 +134,7 @@ impl PageDirectory{
     }
     
     //根据虚拟地址找到物理页框
-    pub fn get_phys_frame_by_vpn(&mut self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{
+    pub fn get_phys_frame_by_vpn(&self,vpn : VirtPageNumber) -> Option<PhysPageNumber>{
         if let Some(pde) = self.find_pte(vpn){
             let ppn = pde.get_page_number();
             let a : usize = ppn.into();
@@ -143,7 +144,46 @@ impl PageDirectory{
             None
         }
     }
+    pub fn get_phys_addr_by_va(&self,va : VirtAddr) -> Option<PhysAddr>{
+        let vpn = va.floor();
+        if let Some(ppn) = self.get_phys_frame_by_vpn(vpn){
+            let temp : usize = ppn.into();
+            Some(PhysAddr(temp + va.get_page_offset()))
+        }
+        else{
+            None
+        }
+    }
 }
+
+pub fn translated_ref<T>(token: usize, ptr: *const T) -> &'static T {
+    let page_table = PageDirectory::from_token(token);
+    page_table.get_phys_addr_by_va(VirtAddr::from(ptr as usize)).unwrap().get_ref()
+}
+
+pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
+    let page_table = PageDirectory::from_token(token);
+    let va = ptr as usize;
+    page_table.get_phys_addr_by_va(VirtAddr::from(va)).unwrap().get_mut()
+}
+
+/// Load a string from other address spaces into kernel space without an end `\0`.
+pub fn translated_str(token: usize, ptr: *const u8) -> String {
+    let page_table = PageDirectory::from_token(token);
+    let mut string = String::new();
+    let mut va = ptr as usize;
+    loop {
+        let ch: u8 = *(page_table.get_phys_addr_by_va(VirtAddr::from(va)).unwrap().get_mut());
+        if ch == 0 {
+            break;
+        }
+        string.push(ch as char);
+        va += 1;
+    }
+    string
+}
+
+
 
 pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&'static mut [u8]> {
     let mut pd = PageDirectory::from_token(token);
@@ -167,4 +207,57 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
         start = end_va.into();
     }
     v
+}
+
+pub struct UserBuffer {
+    pub buffers: Vec<&'static mut [u8]>,
+}
+
+impl UserBuffer {
+    pub fn new(buffers: Vec<&'static mut [u8]>) -> Self {
+        Self { buffers }
+    }
+    pub fn len(&self) -> usize {
+        let mut total: usize = 0;
+        for b in self.buffers.iter() {
+            total += b.len();
+        }
+        total
+    }
+}
+
+impl IntoIterator for UserBuffer {
+    type Item = *mut u8;
+    type IntoIter = UserBufferIterator;
+    fn into_iter(self) -> Self::IntoIter {
+        UserBufferIterator {
+            buffers: self.buffers,
+            current_buffer: 0,
+            current_idx: 0,
+        }
+    }
+}
+
+pub struct UserBufferIterator {
+    buffers: Vec<&'static mut [u8]>,
+    current_buffer: usize,
+    current_idx: usize,
+}
+
+impl Iterator for UserBufferIterator {
+    type Item = *mut u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_buffer >= self.buffers.len() {
+            None
+        } else {
+            let r = &mut self.buffers[self.current_buffer][self.current_idx] as *mut _;
+            if self.current_idx + 1 == self.buffers[self.current_buffer].len() {
+                self.current_idx = 0;
+                self.current_buffer += 1;
+            } else {
+                self.current_idx += 1;
+            }
+            Some(r)
+        }
+    }
 }

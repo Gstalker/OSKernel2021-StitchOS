@@ -1,21 +1,48 @@
-use crate::mmu::translated_byte_buffer;
-use crate::task::{current_user_token, current_task_fd};
-use crate::fs::ProgramBuffer;
+use crate::mmu::{
+    UserBuffer,
+    translated_byte_buffer,
+    translated_refmut,
+    translated_str,
+};
+use crate::task::{current_user_token, suspend_current_and_run_next};
+use crate::sbi::console_getchar;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
-    let fd_table = current_task_fd().unwrap();
-    match fd_table.get(fd) {
-        Some(file_opt) => {
-            if let Some(file) = file_opt {
-                let buffers = translated_byte_buffer(current_user_token(), buf, len);
-                file.write(ProgramBuffer::new(buffers));
-                len as isize
-            } else {
-                -1
+    match fd {
+        FD_STDOUT => {
+            let buffers = translated_byte_buffer(current_user_token(), buf, len);
+            for buffer in buffers {
+                print!("{}", core::str::from_utf8(buffer).unwrap());
             }
+            len as isize
         },
         _ => {
             panic!("Unsupported fd in sys_write!");
+        }
+    }
+}
+
+pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
+    match fd {
+        FD_STDIN => {
+            assert_eq!(len, 1, "Only support len = 1 in sys_read!");
+            let mut c: usize;
+            loop {
+                c = console_getchar();
+                if c == 0 {
+                    suspend_current_and_run_next();
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            let ch = c as u8;
+            let mut buffers = translated_byte_buffer(current_user_token(), buf, len);
+            unsafe { buffers[0].as_mut_ptr().write_volatile(ch); }
+            1
+        }
+        _ => {
+            panic!("Unsupported fd in sys_read!");
         }
     }
 }

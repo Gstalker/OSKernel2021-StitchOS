@@ -15,11 +15,21 @@ pub use mem_section::{
 pub use page_directory::{
     translated_byte_buffer,
     PageDirectory,
+    translated_refmut,
+    translated_ref,
+    translated_str,
+    UserBuffer,
 };
 pub use phys_frame_allocator::{
     FrameItem
 };
-pub use addr_types::*;
+
+pub use addr_types::{
+    PhysPageNumber,
+    PhysAddr,
+    VirtAddr,
+    VirtPageNumber,
+};
 
 pub fn init() {
     kernel_heap::init_heap();
