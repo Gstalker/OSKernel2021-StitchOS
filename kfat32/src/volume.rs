@@ -66,6 +66,10 @@ impl<T> Volume<T>
         }
     }
 
+    pub fn total_sector(&self) -> usize {
+        self.bpb.total_sector as usize
+    }
+
     /// Get Volume Label
     pub fn volume_label(&self) -> &str {
         str::from_utf8(&self.bpb.volume_label).unwrap()

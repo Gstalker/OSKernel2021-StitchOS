@@ -63,25 +63,45 @@ impl<'a, T> Dir<'a, T>
         self.create(file, OpType::File)
     }
 
+    pub fn open_file_entry(&self, di: Entry) -> Result<File<'a, T>, DirError> {
+        if di.is_file() {
+            let fat = FAT::new(di.cluster(),
+                               self.device,
+                               self.bpb.fat1());
+            Ok(File::<T> {
+                device: self.device,
+                bpb: self.bpb,
+                dir_cluster: self.detail.cluster(),
+                detail: di,
+                fat,
+            })
+        } else {
+            Err(DirError::NoMatchFile)
+        }
+    }
+
     /// Open File, Return File<T> Type
     pub fn open_file(&self, file: &str) -> Result<File<'a, T>, DirError> {
         if is_illegal(file) { return Err(DirError::IllegalChar); }
         match self.exist(file) {
             None => Err(DirError::NoMatchFile),
-            Some(di) => if di.is_file() {
-                let fat = FAT::new(di.cluster(),
-                                   self.device,
-                                   self.bpb.fat1());
-                Ok(File::<T> {
-                    device: self.device,
-                    bpb: self.bpb,
-                    dir_cluster: self.detail.cluster(),
-                    detail: di,
-                    fat,
-                })
-            } else {
-                Err(DirError::NoMatchFile)
-            }
+            Some(di) => self.open_file_entry(di)
+        }
+    }
+
+    pub fn cd_entry(&self, di: Entry) -> Result<Dir<'a, T>, DirError> {
+        if di.is_dir() {
+            let fat = FAT::new(di.cluster(),
+                               self.device,
+                               self.bpb.fat1());
+            Ok(Self {
+                device: self.device,
+                bpb: self.bpb,
+                detail: di,
+                fat,
+            })
+        } else {
+            Err(DirError::NoMatchDir)
         }
     }
 
@@ -90,20 +110,12 @@ impl<'a, T> Dir<'a, T>
         if is_illegal(dir) { return Err(DirError::IllegalChar); }
         match self.exist(dir) {
             None => Err(DirError::NoMatchDir),
-            Some(di) => if di.is_dir() {
-                let fat = FAT::new(di.cluster(),
-                                   self.device,
-                                   self.bpb.fat1());
-                Ok(Self {
-                    device: self.device,
-                    bpb: self.bpb,
-                    detail: di,
-                    fat,
-                })
-            } else {
-                Err(DirError::NoMatchDir)
-            }
+            Some(di) => self.cd_entry(di)
         }
+    }
+
+    pub fn list_files(&self) -> DirIter<T> {
+        DirIter::new(self.device, self.fat, self.bpb)
     }
 
     /// Check if file or dir is exist or not, Return Option Type

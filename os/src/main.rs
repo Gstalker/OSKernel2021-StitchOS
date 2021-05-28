@@ -50,8 +50,22 @@ pub fn rust_main() -> ! {
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
+
+    // test codes for fat32 file system -- disable this if not in use
+
+    let mut root = fs::fat32::fat32_root_dir();
+    println!("{:?}", root.ls());
+    println!("{}", root.create_file("blank.txt"));
+
+    let dir = root.child("dir2").unwrap();
+
+    println!("inner {:?}", dir);
+    println!("inner files {:?}", dir.ls());
     println!("into first task");
-    task::run_first_task();
+
+    // end of file system test
+
+    //task::run_first_task();
     println!("second maybe");
     panic!("Unreachable in rust_main!");
 }

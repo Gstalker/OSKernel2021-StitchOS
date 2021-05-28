@@ -276,6 +276,10 @@ impl<'a, T> File<'a, T>
             }
         }).last();
     }
+
+    pub fn len(&self) -> usize {
+        self.detail.length().unwrap()
+    }
 }
 
 impl<'a, T> Iterator for ReadIter<'a, T>

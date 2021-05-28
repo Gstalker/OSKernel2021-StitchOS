@@ -304,7 +304,7 @@ impl LongDirectoryEntry {
 
 #[derive(Default, Copy, Clone, Debug)]
 pub struct Entry {
-    pub(crate) item_type: EntryType,
+    pub item_type: EntryType,
     sfn: Option<ShortDirectoryEntry>,
     lfn: Option<LongDirectoryEntry>,
 }
@@ -354,7 +354,7 @@ impl Entry {
         }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; 32] {
+    pub fn bytes(&self) -> [u8; 32] {
         if self.sfn.is_some() {
             self.sfn.as_ref().unwrap().bytes(self.item_type)
         } else {
