@@ -57,3 +57,10 @@ macro_rules! ERROR {
         $crate::console::print(format_args!(concat!("\x1b[31m[ERROR]   ",concat!(concat!($fmt, "\n"),"\x1b[0m")) $(, $($arg)+)?));
     }
 }
+
+#[macro_export]
+macro_rules! DEBUG {
+    ($fmt: literal $(, $($arg: tt)+)?) => {
+        $crate::console::print(format_args!(concat!("[DEBUG]   ",concat!(concat!($fmt, "\n"),"")) $(, $($arg)+)?));
+    }
+}

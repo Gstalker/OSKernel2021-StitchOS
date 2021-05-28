@@ -24,7 +24,7 @@ pub struct PageDirectory{
 impl PageDirectory{
     pub fn new() -> Self{ 
         if let Some(page) = phys_frame_alloc(){
-            println!("allocated new page {:?}", page.ppn.0);
+            DEBUG!("allocated new page {:?}", page.ppn.0);
             Self{
                 root_page : page.ppn,
                 objs : vec![page]
@@ -58,7 +58,7 @@ impl PageDirectory{
             }
             if !pde.is_valid() {
                 if let Some(frame) = phys_frame_alloc(){
-                    println!("test-------{}", frame.ppn.0);
+                    DEBUG!("test-------{}", frame.ppn.0);
                     *pde = PageDirectoryEntry::new(frame.ppn,PDEFlags::V);
                     self.objs.push(frame);
                     
@@ -83,7 +83,7 @@ impl PageDirectory{
             );
             // let temp = PageDirectoryEntry::new(phys_page_num, flags | PDEFlags::V);
             // *pde = temp;
-            println!("find page--------------- {}", phys_page_num.0);
+            DEBUG!("find page--------------- {}", phys_page_num.0);
             *pde = PageDirectoryEntry::new(phys_page_num, flags | PDEFlags::V)
         }
         else{
@@ -109,17 +109,17 @@ impl PageDirectory{
         let idx = virt_page_num.indexes();
         let mut ppn = self.root_page;
         let mut result : Option<&PageDirectoryEntry> = None;
-        println!("idx: {:?} {:?}",idx, ppn.0);
+        DEBUG!("idx: {:?} {:?}",idx, ppn.0);
         for i in 0..3 {
             //找到Page Dir Entry，也就是页目录中的一个元素
-            println!("addr check {}", ppn.0);
+            DEBUG!("addr check {}", ppn.0);
             let pde = &ppn.get_pte_array()[idx[i]];
-            println!("pde: {:?}", pde.is_valid());
-            println!("len {}", ppn.get_pte_array().len());
+            DEBUG!("pde: {:?}", pde.is_valid());
+            DEBUG!("len {}", ppn.get_pte_array().len());
             if i == 2{
-                println!("any output?");
-                println!("pde: {:X}",pde.item);
-                println!("any output?");
+                DEBUG!("any output?");
+                DEBUG!("pde: {:X}",pde.item);
+                DEBUG!("any output?");
                 result = Some(pde);
                 break
             }
@@ -129,7 +129,7 @@ impl PageDirectory{
             //下面是报错位置
             ppn = pde.get_page_number();
         }
-        println!("out of {}", result.unwrap().item);
+        DEBUG!("out of {}", result.unwrap().item);
         result
     }
     

@@ -34,7 +34,6 @@ impl Processor {
     pub fn run(&self) {
         loop {
             if let Some(task) = pop_task() {
-                LOG!("here!");
                 let idle_task_cx_ptr2 = self.get_idle_task_cx_ptr2();
                 // acquire
                 let mut task_inner = task.acquire_inner_lock();
