@@ -30,8 +30,15 @@ pub fn sys_get_time() -> isize {
     get_time_ms() as isize
 }
 
-pub fn sys_brk() -> isize{
-    -1
+//IF FAIL: return -1
+pub fn sys_brk(expend_size : usize) -> isize{
+    let task = current_task().unwrap();
+    if let Some(result) = task.brk(expend_size){
+        result as isize
+    }
+    else{
+        -1
+    }
 }
 
 pub fn sys_fork() -> isize {

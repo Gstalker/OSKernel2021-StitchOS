@@ -61,6 +61,6 @@ macro_rules! ERROR {
 #[macro_export]
 macro_rules! DEBUG {
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::print(format_args!(concat!("[DEBUG]   ",concat!(concat!($fmt, "\n"),"")) $(, $($arg)+)?));
+        // $crate::console::print(format_args!(concat!("[DEBUG]   ",concat!(concat!($fmt, "\n"),"")) $(, $($arg)+)?));
     }
 }

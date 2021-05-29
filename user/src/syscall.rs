@@ -9,6 +9,7 @@ const SYSCALL_EXEC: usize = 221;
 const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_PIPE: usize = 59;
 const SYSCALL_OPEN: usize = 56;
+const SYSCALL_BRK : usize = 214;
 
 fn syscall(id: usize, args: [usize; 3]) -> isize {
     let mut ret: isize;
@@ -66,4 +67,8 @@ pub fn sys_pipe(pipe: &mut [usize]) -> isize {
 
 pub fn sys_open(path: &str, flags: u32) -> isize {
     syscall(SYSCALL_OPEN, [path.as_ptr() as usize, flags as usize, 0])
+}
+
+pub fn sys_brk(expend_size : usize) -> isize {
+    syscall(SYSCALL_BRK, [expend_size,0,0])
 }

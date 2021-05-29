@@ -54,17 +54,17 @@ pub fn rust_main() -> ! {
 
     // test codes for fat32 file system -- disable this if not in use
 
-    let mut root = fs::fat32::fat32_root_dir();
-    println!("{:?}", root.ls());
-    println!("{}", root.create_file("blank.txt"));
+    // let mut root = fs::fat32::fat32_root_dir();
+    // println!("{:?}", root.ls());
+    // println!("{}", root.create_file("blank.txt"));
 
-    let dir = root.child("dir2").unwrap();
+    // let dir = root.child("dir2").unwrap();
 
-    println!("inner {:?}", dir);
-    println!("inner files {:?}", dir.ls());
-    println!("into first task");
+    // println!("inner {:?}", dir);
+    // println!("inner files {:?}", dir.ls());
+    // println!("into first task");
     
-    loader::list_apps();
+    // loader::list_apps();
 
     // end of file system test
 

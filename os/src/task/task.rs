@@ -170,6 +170,11 @@ impl TaskControlBlock {
         );
         task_control_block
     }
+    pub fn brk(&self,expend_size : usize) -> Option<isize>{
+        let mut inner = self.acquire_inner_lock();
+        let mem_area = &mut inner.mem_area;
+        mem_area.brk(expend_size)
+    }
     pub fn exec(&self, elf_data: &[u8]) {
         // mem_area with elf program headers/trampoline/trap context/user stack
         let (mut mem_area, user_sp, entry_point) = MemArea::new_from_elf(elf_data);

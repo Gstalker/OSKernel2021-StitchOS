@@ -42,10 +42,58 @@ lazy_static! {
     ));
 }
 
+struct HeapSection{
+    mem_sect : MemSection,
+    start_va : VirtAddr,
+    end_va   : VirtAddr,
+}
+
+impl HeapSection{
+    pub fn new(s : VirtAddr,e : VirtAddr , pd : &mut PageDirectory) -> Self{
+        let mut mem_sect = MemSection::new(
+            s.into(),
+            e.into(),
+            MemSectionPermission::R | MemSectionPermission::W | MemSectionPermission::U,
+            MemMapType::FRAMED,
+        );
+        mem_sect.map(pd);
+        Self{
+            mem_sect,
+            start_va : s,
+            end_va : e,
+        }
+    }
+
+    //缺少逻辑：减少BRK大小的机制
+    pub fn brk(&mut self,expend_size : usize ,pd : &mut PageDirectory) -> Option<isize>{
+        //当参数为0时，返回heap_base
+        if expend_size == 0{
+            return Some(self.start_va.0 as isize)
+        }
+        let new_end_va : usize = self.end_va.0 + expend_size;
+        if new_end_va < self.start_va.0{
+            return None
+        }
+        //如果能成功从页表中找到这个va对应的物理地址，则说明不需要expand
+        else if let Some(phys_addr) = pd.get_phys_addr_by_va(new_end_va.into()){}
+        //无法从页表中找到va对应的物理地址，则map_single_frame
+        else{
+            let mut i : usize = self.end_va.celi().into();
+            while i < new_end_va{
+                self.mem_sect.map_single_frame(pd, i.into());
+                i += PAGE_SIZE;
+            }
+        }
+        self.end_va = new_end_va.into();
+        return Some(new_end_va as isize);
+    }
+}
+
 //一个进程的地址空间
 pub struct MemArea{
     page_directory : PageDirectory,
     mem_sections   : Vec<MemSection>,
+    heap_section   : Option<HeapSection>, // 第一次调用BRK前，这里为空
 }
 
 impl MemArea{
@@ -54,6 +102,7 @@ impl MemArea{
         Self{
             page_directory: PageDirectory::new(),
             mem_sections  : Vec::new(),
+            heap_section  : None,
         }
     }
     // 返回MemArea ,uesr stack pointer , program entry point
@@ -107,6 +156,19 @@ impl MemArea{
             MemMapType::FRAMED,
         ), None);
         // map TrapContext
+
+        // map heap
+        //guard page
+        let heap_start = user_stack_bottom + PAGE_SIZE;
+        let heap_end = heap_start;
+        WARN!("mapp heap_section");
+        ma.heap_section = Some(HeapSection::new(
+            heap_start.into(), 
+            heap_end.into(),
+            &mut ma.page_directory,
+        ));
+        WARN!("mapp heap_section complete!");
+
         ma.push(MemSection::new(
             TRAP_CONTEXT.into(),
             TRAMPOLINE.into(),
@@ -208,6 +270,16 @@ impl MemArea{
         }
         ma
     }
+
+    pub fn brk(&mut self,expend_size : usize) -> Option<isize>{
+        if let Some(heap_sect) = &mut self.heap_section{
+            heap_sect.brk(expend_size,&mut self.page_directory)
+        }
+        else{
+            None
+        }
+    }
+
     // 添加一个分页的段
     pub fn add_framed_section(
         &mut self,
