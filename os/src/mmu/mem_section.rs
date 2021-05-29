@@ -56,7 +56,7 @@ impl HeapSection{
             MemSectionPermission::R | MemSectionPermission::W | MemSectionPermission::U,
             MemMapType::FRAMED,
         );
-        mem_sect.map(pd);
+        // mem_sect.map(pd);
         Self{
             mem_sect,
             start_va : s,
@@ -75,13 +75,14 @@ impl HeapSection{
             return None
         }
         //如果能成功从页表中找到这个va对应的物理地址，则说明不需要expand
-        else if let Some(phys_addr) = pd.get_phys_addr_by_va(new_end_va.into()){}
+        // else if new_end_va < self.mem_sect.end_vpn.into(){}wowoxian
         //无法从页表中找到va对应的物理地址，则map_single_frame
         else{
-            let mut i : usize = self.end_va.celi().into();
+            let mut i : usize = self.mem_sect.end_vpn.into();
             while i < new_end_va{
                 self.mem_sect.map_single_frame(pd, i.into());
                 i += PAGE_SIZE;
+                self.mem_sect.end_vpn = i.into();
             }
         }
         self.end_va = new_end_va.into();
@@ -147,7 +148,7 @@ impl MemArea{
         let max_end_va: VirtAddr = max_end_vpn.into();
         let mut user_stack_bottom: usize = max_end_va.into();
         // guard page
-        user_stack_bottom += PAGE_SIZE;
+        user_stack_bottom += PAGE_SIZE * 0x10;
         let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
         ma.push(MemSection::new(
             user_stack_bottom.into(),
@@ -159,7 +160,7 @@ impl MemArea{
 
         // map heap
         //guard page
-        let heap_start = user_stack_bottom + PAGE_SIZE;
+        let heap_start = user_stack_bottom + PAGE_SIZE * 0x10000;
         let heap_end = heap_start;
         WARN!("mapp heap_section");
         ma.heap_section = Some(HeapSection::new(
@@ -440,7 +441,7 @@ impl MemSection{
         }
     }
     fn map_single_frame(&mut self,pd :&mut PageDirectory,vpn : VirtPageNumber){
-        let mut ppn : PhysPageNumber;
+        let ppn : PhysPageNumber;
         match self.map_type{
             MemMapType::DIRECT =>{
                 ppn = PhysPageNumber(vpn.0);
