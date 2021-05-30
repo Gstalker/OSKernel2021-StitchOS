@@ -15,6 +15,8 @@ pub enum FileError {
 }
 
 /// Define WriteType
+/// 
+#[derive(Debug, Copy, Clone)]
 pub enum WriteType {
     OverWritten,
     Append,

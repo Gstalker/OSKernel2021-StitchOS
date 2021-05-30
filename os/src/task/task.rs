@@ -21,7 +21,7 @@ use alloc::string::String;
 use alloc::sync::{Weak, Arc};
 use spin::{Mutex, MutexGuard};
 
-pub type FDTable = Vec<Option<Arc<dyn File + Send + Sync>>>;
+pub type FDTable = Vec<Option<Arc<Mutex<dyn File + Send + Sync>>>>;
 
 pub struct TaskControlBlock {
     // immutable
@@ -49,7 +49,7 @@ pub struct TaskControlBlockInner {
     // 退出编号
     pub exit_code: i32,
     // 进程打开的fd
-    pub fd_table: Vec<Option<Arc<dyn File + Send + Sync>>>,
+    pub fd_table: Vec<Option<Arc<Mutex<dyn File + Send + Sync>>>>,
 }
 
 impl TaskControlBlockInner {
@@ -99,9 +99,9 @@ impl TaskControlBlockInner {
             children : Vec::new(),
             exit_code: 0,
             fd_table: vec![
-                Some(Arc::new(Stdin)),
-                Some(Arc::new(Stdout)),
-                Some(Arc::new(Stdout)), // stderr
+                Some(Arc::new(Mutex::new(Stdin))),
+                Some(Arc::new(Mutex::new(Stdout))),
+                Some(Arc::new(Mutex::new(Stdout))), // stderr
             ]
         };
         // prepare TrapContext in user space
@@ -151,11 +151,11 @@ impl TaskControlBlock {
                 exit_code: 0,
                 fd_table: vec![
                     // 0 -> stdin
-                    Some(Arc::new(Stdin)),
+                    Some(Arc::new(Mutex::new(Stdin))),
                     // 1 -> stdout
-                    Some(Arc::new(Stdout)),
+                    Some(Arc::new(Mutex::new(Stdout))),
                     // 2 -> stderr
-                    Some(Arc::new(Stdout)),
+                    Some(Arc::new(Mutex::new(Stdout))),
                 ],
             }),
         };
@@ -216,13 +216,9 @@ impl TaskControlBlock {
         // push a goto_trap_return task_cx on the top of kernel stack
         let task_cx_ptr = kernel_stack.push(TaskContext::goto_trap_return());
         // copy fd table
-        let mut new_fd_table: Vec<Option<Arc<dyn File + Send + Sync>>> = Vec::new();
+        let mut new_fd_table: FDTable = Vec::new();
         for fd in parent_inner.fd_table.iter() {
-            if let Some(file) = fd {
-                new_fd_table.push(Some(file.clone()));
-            } else {
-                new_fd_table.push(None);
-            }
+                new_fd_table.push(fd.clone());
         }
         let task_control_block = Arc::new(TaskControlBlock {
             pid: pid_handle,

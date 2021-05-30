@@ -18,7 +18,6 @@ pub use page_directory::{
     translated_refmut,
     translated_ref,
     translated_str,
-    UserBuffer,
 };
 pub use phys_frame_allocator::{
     FrameItem

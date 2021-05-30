@@ -138,6 +138,45 @@ impl Inode {
         }).unwrap_or(false)
     }
 }
+use super::ProgramBuffer;
+use kfat32::file::WriteType;
+
+pub struct SysFile<'a>(
+    kfat32::file::File<'a, DummyDevice>,
+    WriteType
+);
+
+impl <'a> SysFile<'a> {
+    fn new(file: kfat32::file::File<'a, DummyDevice>, wt: WriteType) -> Self {
+        SysFile (
+            file,
+            wt
+        )
+    }
+}
+
+impl <'a> crate::fs::File for SysFile<'a> {
+    fn read(&self, buf: ProgramBuffer) -> usize {
+        let mut len : usize = 0;
+        for buffer in buf.buffers {
+            len += self.0.read(buffer).unwrap();
+            if len < buffer.len() {
+                break;
+            }
+        }
+        len
+    }
+    fn write(&mut self, buf: ProgramBuffer) -> usize {
+        let mut len : usize = 0;
+        for buffer in buf.buffers {
+            self.0.write(buffer, self.1).unwrap();
+            if len < buffer.len() {
+                break;
+            }
+        }
+        len
+    }
+}
 
 lazy_static! {
     pub static ref GLOBAL_VOLUME: Volume<DummyDevice> = {

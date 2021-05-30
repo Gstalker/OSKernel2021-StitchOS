@@ -11,6 +11,7 @@ const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_PIPE: usize = 59;
 const SYSCALL_OPEN: usize = 56;
 const SYSCALL_BRK : usize = 214;
+const SYSCALL_MKDIR : usize = 1030;
 
 fn syscall(id: usize, args: [usize; 3]) -> isize {
     let mut ret: isize;
