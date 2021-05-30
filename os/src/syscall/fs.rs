@@ -28,7 +28,7 @@ pub fn sys_read(fd: usize, buf: *mut u8, len: usize) -> isize {
     let task = current_task().unwrap();
     let file_fd = {
         let inner = task.acquire_inner_lock();
-        inner.fd_table.get(fd).clone()
+        inner.fd_table.get(fd).cloned()
     };
     match file_fd {
         Some(Some(file)) => {
