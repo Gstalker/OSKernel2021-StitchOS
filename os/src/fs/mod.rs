@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 mod stdio;
 pub mod fat32;
 pub mod inode;
+pub mod mbr;
 
 pub use stdio::{Stdin, Stdout};
 

@@ -9,25 +9,26 @@ use super::inode::*;
 use alloc::vec;
 use alloc::vec::*;
 
+// 0 - handle to physical device, 1 - offset of partition
 #[derive(Copy, Clone, Debug)]
-pub struct DummyDevice(usize);
+pub struct PartitionDevice(usize, usize);
 
 const SECTOR_LEN : usize = 512;
 
 // Dummy Device that selects SD card as block device and with a default 2048 sectors' offset against FAT32 in MBR
-impl BlockDevice for DummyDevice {
+impl BlockDevice for PartitionDevice {
     type Error = ();
 
     fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<usize, Self::Error> {
         unsafe {
             let v =  &*(self.0 as *const BlockDeviceImpl);
-            v.read(buf, address + SECTOR_LEN * 2048, number_of_blocks)
+            v.read(buf, address + self.1 * 512, number_of_blocks)
         }
     }
     fn write(&self, buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, Self::Error> {
         unsafe {
             let v =  &*(self.0 as *const BlockDeviceImpl);
-            v.write(buf, address + SECTOR_LEN * 2048, number_of_blocks)
+            v.write(buf, address + self.1 * 512, number_of_blocks)
         }
     }
 }
@@ -36,7 +37,7 @@ use kfat32::entry::EntryType;
 
 #[derive(Debug)]
 pub struct Inode{
-    pub(crate) dir: Option<dir::Dir<'static, DummyDevice>>,
+    pub(crate) dir: Option<dir::Dir<'static, PartitionDevice>>,
     pub(crate) entry: Option<Entry>
 }
 
@@ -74,7 +75,7 @@ impl Inode {
         return !self.is_dir()
     }
 
-    pub fn open_sub_inode<'a>(&self, node: &Inode) -> Option<kfat32::file::File<'a, DummyDevice>> {
+    pub fn open_sub_inode<'a>(&self, node: &Inode) -> Option<kfat32::file::File<'a, PartitionDevice>> {
         self.dir.map(|dir| {
             node.entry.map(|entry| {
                 dir.open_file_entry(entry).ok()
@@ -82,7 +83,7 @@ impl Inode {
         }).flatten().flatten()
     }
 
-    pub fn open_file<'a>(&self, name: &str) -> Option<kfat32::file::File<'a, DummyDevice>> {
+    pub fn open_file<'a>(&self, name: &str) -> Option<kfat32::file::File<'a, PartitionDevice>> {
         self.dir.map(|dir| {
             dir.open_file(name).ok()
         }).flatten()
@@ -142,12 +143,12 @@ use super::ProgramBuffer;
 use kfat32::file::WriteType;
 
 pub struct SysFile<'a>(
-    kfat32::file::File<'a, DummyDevice>,
+    kfat32::file::File<'a, PartitionDevice>,
     WriteType
 );
 
 impl <'a> SysFile<'a> {
-    fn new(file: kfat32::file::File<'a, DummyDevice>, wt: WriteType) -> Self {
+    fn new(file: kfat32::file::File<'a, PartitionDevice>, wt: WriteType) -> Self {
         SysFile (
             file,
             wt
@@ -169,6 +170,7 @@ impl <'a> crate::fs::File for SysFile<'a> {
     fn write(&mut self, buf: ProgramBuffer) -> usize {
         let mut len : usize = 0;
         for buffer in buf.buffers {
+            len += buffer.len();
             self.0.write(buffer, self.1).unwrap();
             if len < buffer.len() {
                 break;
@@ -178,11 +180,32 @@ impl <'a> crate::fs::File for SysFile<'a> {
     }
 }
 
+use super::mbr::*;
+#[macro_use]
+use crate::console;
+
+fn create_volume_from_part(id: usize) -> Volume<PartitionDevice> {
+    let mut sector : Vec<u8> = Vec::with_capacity(512);
+    unsafe {
+        sector.set_len(512);
+    }
+    LOG!("Initializing SD Block Device");
+    let dev = crate::drivers::storage::BLOCK_DEVICE.clone();
+    dev.read(sector.as_mut_slice(), 0, 1).unwrap();
+    let mbr = MasterBootRecord::from_sector(sector.as_slice());
+    let active = mbr.partitions[0].is_active();
+    LOG!("Master Boot Record Read, partition {} status => {}", id
+            , if active {"active"} else { "inactive" });
+    if !active {
+        ERROR!("No active partition found in block device, the system might fail!")
+    } else {
+        LOG!("Disk partition file system is {:?}, with {} sectors allocated", mbr.partitions[0].fs, mbr.partitions[0].size)
+    }
+    Volume::new(PartitionDevice(Arc::as_ptr(&dev) as *const _ as usize, mbr.partitions[0].start_sector as usize))
+}
+
 lazy_static! {
-    pub static ref GLOBAL_VOLUME: Volume<DummyDevice> = {
-        let dev = crate::drivers::storage::BLOCK_DEVICE.clone();
-        Volume::new(DummyDevice(Arc::as_ptr(&dev) as *const _ as usize))
-    };
+    pub static ref GLOBAL_VOLUME: Volume<PartitionDevice> = create_volume_from_part(0);
 }
 
 pub fn fat32_label() -> &'static str {
