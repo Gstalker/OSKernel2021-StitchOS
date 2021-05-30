@@ -49,6 +49,7 @@ pub fn exit(exit_code: i32) -> ! { sys_exit(exit_code); }
 pub fn yield_() -> isize { sys_yield() }
 pub fn get_time() -> isize { sys_get_time() }
 pub fn getpid() -> isize { sys_getpid() }
+pub fn getppid() -> isize { sys_getppid() }
 pub fn fork() -> isize { sys_fork() }
 pub fn exec(path: &str) -> isize { sys_exec(path) }
 pub fn wait(exit_code: &mut i32) -> isize {

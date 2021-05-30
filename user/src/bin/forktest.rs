@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::{fork, wait, exit};
+use user_lib::{fork, wait, exit,getpid,getppid};
 
 const MAX_CHILD: usize = 40;
 
@@ -13,7 +13,10 @@ pub fn main() -> i32 {
     for i in 0..MAX_CHILD {
         let pid = fork();
         if pid == 0 {
-            println!("I am child {}", i);
+            println!("I am child {}", getpid() as isize);
+            println!("get pid {} ", getpid() as isize);
+            println!("My parent is: {}", getppid() as isize);
+
             exit(0);
         } else {
             println!("forked child pid = {}", pid);
@@ -30,5 +33,6 @@ pub fn main() -> i32 {
         panic!("wait got too many");
     }
     println!("forktest pass.");
+    println!("get pid {} ", getpid() as isize);
     0
 }

@@ -108,3 +108,12 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
 pub fn sys_getpid() -> isize {
     current_task().unwrap().pid.0 as isize
 }
+
+pub fn sys_getppid() -> isize{
+    if let Some(ppid) = current_task().unwrap().get_ppid() {
+        ppid
+    }
+    else{
+        -1
+    }
+}

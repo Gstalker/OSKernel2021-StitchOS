@@ -311,6 +311,7 @@ impl MemArea{
             if self.mem_sections[i].start_vpn == vpn{
                 self.mem_sections[i].unmap(&mut self.page_directory);
                 self.mem_sections.remove(i);
+                break;
             }
         }
     }

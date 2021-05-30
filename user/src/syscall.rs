@@ -4,6 +4,7 @@ const SYSCALL_EXIT: usize = 93;
 const SYSCALL_YIELD: usize = 124;
 const SYSCALL_GET_TIME: usize = 169;
 const SYSCALL_GETPID: usize = 172;
+const SYSCALL_GETPPID: usize = 173;
 const SYSCALL_FORK: usize = 220;
 const SYSCALL_EXEC: usize = 221;
 const SYSCALL_WAITPID: usize = 260;
@@ -47,6 +48,10 @@ pub fn sys_get_time() -> isize {
 
 pub fn sys_getpid() -> isize {
     syscall(SYSCALL_GETPID, [0, 0, 0])
+}
+
+pub fn sys_getppid() -> isize {
+    syscall(SYSCALL_GETPPID,[0, 0, 0])
 }
 
 pub fn sys_fork() -> isize {

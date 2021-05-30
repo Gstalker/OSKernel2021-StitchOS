@@ -253,6 +253,14 @@ impl TaskControlBlock {
     pub fn getpid(&self) -> usize {
         self.pid.0
     }
+    pub fn get_ppid(&self) -> Option<isize>{
+        if let Some(parent) = &self.acquire_inner_lock().parent{
+            Some(parent.upgrade().unwrap().pid.0 as isize)
+        }
+        else{
+            None
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
