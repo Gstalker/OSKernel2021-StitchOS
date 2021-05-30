@@ -20,7 +20,7 @@ const SYSCALL_MMAP : usize = 222;
 const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_MKDIR : usize = 1030;
 
-mod fs;
+pub mod fs;
 mod process;
 
 use fs::*;

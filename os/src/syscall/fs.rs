@@ -44,3 +44,31 @@ pub fn sys_read(fd: usize, buf: *mut u8, len: usize) -> isize {
         }
     }
 }
+
+bitflags! {
+    pub struct OpenFlags: u32 {
+        const RDONLY = 0;
+        const WRONLY = 1 << 0;
+        const RDWR = 1 << 1;
+        const CREATE = 1 << 9;
+        const TRUNC = 1 << 10;
+    }
+}
+use kfat32::file::WriteType;
+
+impl Into<WriteType> for OpenFlags {
+    fn into(self) -> WriteType {
+        WriteType::OverWritten
+    }
+}
+
+use crate::fs::fat32;
+
+pub fn sys_open(path: &str, flags: u32) -> isize {
+    let task = current_task().unwrap();
+    let inner = task.acquire_inner_lock();
+    let next_id = inner.fd_table.len();
+    let flags = OpenFlags::from_bits(flags);
+    fat32::fat32_path(path, None);
+    -1
+}

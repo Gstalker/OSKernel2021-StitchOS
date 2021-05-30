@@ -180,12 +180,12 @@ impl Inode {
     }
 }
 use super::ProgramBuffer;
-use kfat32::file::WriteType;
+use crate::syscall::fs::OpenFlags;
 
-pub struct SysFile<'a>(kfat32::file::File<'a, PartitionDevice>, WriteType);
+pub struct SysFile<'a>(kfat32::file::File<'a, PartitionDevice>, OpenFlags);
 
 impl<'a> SysFile<'a> {
-    fn new(file: kfat32::file::File<'a, PartitionDevice>, wt: WriteType) -> Self {
+    fn new(file: kfat32::file::File<'a, PartitionDevice>, wt: OpenFlags) -> Self {
         SysFile(file, wt)
     }
 }
@@ -205,7 +205,7 @@ impl<'a> crate::fs::File for SysFile<'a> {
         let mut len: usize = 0;
         for buffer in buf.buffers {
             len += buffer.len();
-            self.0.write(buffer, self.1).unwrap();
+            self.0.write(buffer, self.1.into()).unwrap();
             if len < buffer.len() {
                 break;
             }
