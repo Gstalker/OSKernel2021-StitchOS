@@ -591,7 +591,7 @@ impl</*'a,*/ X: SPI> SDCard</*'a,*/ X> {
      */
     pub fn read_sector(&self, data_buf: &mut [u8], sector: u32) -> Result<(), ()> {
         /* Send CMD17 to read one block, or CMD18 for multiple */
-        println!("red sector {}", sector);
+        DEBUG!("red sector {}", sector);
         let flag = if data_buf.len() == SEC_LEN {
             self.send_cmd(CMD::CMD17, sector, 0);
             false
@@ -623,7 +623,7 @@ impl</*'a,*/ X: SPI> SDCard</*'a,*/ X> {
             /* Get CRC bytes (not really needed by us, but required by SD) */
             let mut frame = [0u8; 2];
             self.read_data(&mut frame);
-            println!("crc {:?} {:?}", frame, chunk);
+            DEBUG!("crc {:?} {:?}", frame, chunk);
         }
         self.end_cmd();
         if flag {
@@ -732,7 +732,7 @@ fn init_sdcard() -> SDCard<SPIImpl<SPI0>> {
     let num_sectors = info.CardCapacity / 512;
     assert!(num_sectors > 0);
 
-    println!("init sdcard! {:?}", info);
+    DEBUG!("init sdcard! {:?}", info);
     sd
 }
 

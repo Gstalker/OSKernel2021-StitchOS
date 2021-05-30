@@ -8,14 +8,17 @@ use crate::task::{current_user_token, current_task, suspend_current_and_run_next
 use crate::sbi::console_getchar;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
+    println!("sys_write_test");
     let task = current_task().unwrap();
     let mut inner = task.acquire_inner_lock();
     match &inner.fd_table.get_mut(fd).cloned() {
         Some(Some(file)) => {
-
+            println!("sys_write_test");
             let buffers = translated_byte_buffer(current_user_token(), buf, len);
-            
-            file.lock().write(ProgramBuffer::new(buffers)) as isize
+            println!("sys_write_test");
+            let result = file.lock().write(ProgramBuffer::new(buffers)) as isize;
+            println!("sys_write_test");
+            return result;
         },
         _ => {
             panic!("Unsupported fd in sys_write!");

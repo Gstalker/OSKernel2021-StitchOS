@@ -55,10 +55,10 @@ impl Inode {
         self.dir
             .map(|dir| {
                 dir.exist(name).map(|entry| {
-                    println!("child entry {:?} {:?}", entry, entry.item_type);
+                    DEBUG!("child entry {:?} {:?}", entry, entry.item_type);
                     match entry.item_type {
                         EntryType::File => {
-                            println!("as file {:?}", entry);
+                            DEBUG!("as file {:?}", entry);
                             Some(Inode {
                                 dir: None,
                                 entry: Some(entry),
@@ -66,7 +66,7 @@ impl Inode {
                         }
                         EntryType::Dir => {
                             // we knew it's a directory, so unwrap
-                            println!("as dir {:?}", entry);
+                            DEBUG!("as dir {:?}", entry);
                             Some(Inode {
                                 dir: Some(dir.cd_entry(entry).unwrap()),
                                 entry: None,
@@ -107,12 +107,12 @@ impl Inode {
     }
 
     pub fn ls(&self) -> Vec<Inode> {
-        println!("into ls");
+        DEBUG!("into ls");
         if let Some(dir) = self.dir {
-            println!("into ls is dir");
+            DEBUG!("into ls is dir");
             let mut result = vec![];
             for entry in dir.list_files() {
-                println!("entry {:?}", entry);
+                DEBUG!("entry {:?}", entry);
                 match entry.item_type {
                     EntryType::File => result.push(Inode {
                         dir: None,
@@ -207,18 +207,18 @@ fn create_volume_from_part(id: usize) -> Volume<PartitionDevice> {
     unsafe {
         sector.set_len(512);
     }
-    LOG!("Initializing SD Block Device");
+    DEBUG!("Initializing SD Block Device");
     let dev = crate::drivers::storage::BLOCK_DEVICE.clone();
     dev.read(sector.as_mut_slice(), 0, 1).unwrap();
-    LOG!("Detecting Raw Fat32 System ...");
+    DEBUG!("Detecting Raw Fat32 System ...");
     let header = str::from_utf8(&sector[0x52..0x57]).unwrap_or("fail");
     let offset = if header.to_lowercase().eq("fat32") {
-        LOG!("Raw Fat32 File System Detected ... why not partition it =.=?");
+        DEBUG!("Raw Fat32 File System Detected ... why not partition it =.=?");
         0
     } else {
         let mbr = MasterBootRecord::from_sector(sector.as_slice());
         let active = mbr.partitions[0].is_active();
-        LOG!(
+        DEBUG!(
             "Master Boot Record Read, partition {} status => {}",
             id,
             if active { "active" } else { "inactive" }
@@ -226,11 +226,11 @@ fn create_volume_from_part(id: usize) -> Volume<PartitionDevice> {
         if !active {
             ERROR!("No active partition found in block device, the system might fail!")
         } else {
-            LOG!(
+            DEBUG!(
                 "Disk partition file system is {:?}, with {} sectors allocated",
                 mbr.partitions[0].fs,
                 mbr.partitions[0].size
-            )
+            );
         }
         mbr.partitions[0].start_sector as usize
     };

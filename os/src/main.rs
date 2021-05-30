@@ -25,7 +25,7 @@ mod fs;
 mod mmu;
 mod drivers;
 global_asm!(include_str!("entry.asm"));
-global_asm!(include_str!("link_app.S"));
+// global_asm!(include_str!("link_app.S"));
 
 fn clear_bss() {
     extern "C" {
