@@ -22,6 +22,7 @@ const SYSCALL_DUP3: usize = 23;
 const SYSCALL_DUP: usize = 24;
 const SYSCALL_OPEN: usize = 56;
 const SYSCALL_CLOSE: usize = 57;
+const SYSCALL_CHDIR: usize = 49;
 
 pub mod fs;
 mod process;
@@ -47,6 +48,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_DUP3 => sys_dup3(args[0], args[1], args[2]),
         SYSCALL_OPEN => sys_open(args[0] as *const u8, args[1] as u32),
         SYSCALL_CLOSE => sys_close(args[0]),
+        SYSCALL_GETCWD => getcwd(args[0] as *mut u8, args[1] as u32),
+        SYSCALL_CHDIR => chdir(args[0] as *const u8),
+        SYSCALL_MKDIR => sys_mkdir(args[0] as *const u8, args[1] as u32),
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }
