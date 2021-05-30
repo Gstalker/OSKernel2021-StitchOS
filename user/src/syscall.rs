@@ -10,6 +10,7 @@ const SYSCALL_WRITE: usize = 64;
 const SYS_FSTATE   : usize = 80;
 const SYSCALL_EXIT: usize = 93;
 const SYSCALL_YIELD: usize = 124;
+const SYSCALL_UNAME: usize = 160;
 const SYSCALL_GET_TIME: usize = 169;
 const SYSCALL_GETPID: usize = 172;
 const SYSCALL_GETPPID: usize = 173;
@@ -19,7 +20,16 @@ const SYSCALL_BRK : usize = 214;
 const SYSCALL_MMAP : usize = 222;
 const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_MKDIR : usize = 1030;
-
+#[repr(C)]
+#[derive(Debug)]
+pub struct utsname{
+    pub sysname : [u8;65],
+    pub nodename : [u8;65],
+    pub release : [u8;65],
+    pub version : [u8;65],
+    pub machine : [u8;65],
+    pub domainname : [u8;65],
+}
 
 
 
@@ -88,4 +98,8 @@ pub fn sys_open(path: &str, flags: u32) -> isize {
 
 pub fn sys_brk(expend_size : usize) -> isize {
     syscall(SYSCALL_BRK, [expend_size,0,0])
+}
+
+pub fn sys_uname(us : *mut utsname) -> isize{
+    syscall(SYSCALL_UNAME, [us as usize,0,0])
 }

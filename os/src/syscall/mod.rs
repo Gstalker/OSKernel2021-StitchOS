@@ -9,6 +9,7 @@ const SYSCALL_WRITE: usize = 64;
 const SYS_FSTATE   : usize = 80;
 const SYSCALL_EXIT: usize = 93;
 const SYSCALL_YIELD: usize = 124;
+const SYSCALL_UNAME: usize = 160;
 const SYSCALL_GET_TIME: usize = 169;
 const SYSCALL_GETPID: usize = 172;
 const SYSCALL_GETPPID: usize = 173;
@@ -38,6 +39,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_BRK =>  sys_brk(args[0]),
         SYSCALL_WAITPID => sys_waitpid(args[0] as isize, args[1] as *mut i32),
         SYSCALL_GETPPID => sys_getppid(),
+        SYSCALL_UNAME => sys_uname(args[0] as *mut utsname),
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }

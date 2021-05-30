@@ -11,6 +11,7 @@ mod lang_items;
 #[macro_use]
 extern crate bitflags;
 
+pub use syscall::utsname;
 use syscall::*;
 use buddy_system_allocator::LockedHeap;
 
@@ -91,4 +92,8 @@ bitflags! {
 
 pub fn open(path: &str, flags: OpenFlags) -> isize {
     sys_open(path, flags.bits)
+}
+
+pub fn uname(us : *mut utsname) -> isize{
+    sys_uname(us)
 }
