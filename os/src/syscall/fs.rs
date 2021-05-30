@@ -8,16 +8,12 @@ use crate::task::{current_user_token, current_task, suspend_current_and_run_next
 use crate::sbi::console_getchar;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
-    println!("sys_write_test");
     let task = current_task().unwrap();
     let mut inner = task.acquire_inner_lock();
     match &inner.fd_table.get_mut(fd).cloned() {
         Some(Some(file)) => {
-            println!("sys_write_test");
-            let buffers = translated_byte_buffer(current_user_token(), buf, len);
-            println!("sys_write_test");
+            let buffers = translated_byte_buffer(inner.get_user_token(), buf, len);
             let result = file.lock().write(ProgramBuffer::new(buffers)) as isize;
-            println!("sys_write_test");
             return result;
         },
         _ => {
@@ -30,8 +26,11 @@ use alloc::vec;
 
 pub fn sys_read(fd: usize, buf: *mut u8, len: usize) -> isize {
     let task = current_task().unwrap();
-    let inner = task.acquire_inner_lock();
-    match inner.fd_table.get(fd) {
+    let file_fd = {
+        let inner = task.acquire_inner_lock();
+        inner.fd_table.get(fd).clone()
+    };
+    match file_fd {
         Some(Some(file)) => {
             unsafe {
                 file.lock().read(ProgramBuffer::new(vec![

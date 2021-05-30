@@ -186,16 +186,11 @@ pub fn translated_str(token: usize, ptr: *const u8) -> String {
 
 
 pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&'static mut [u8]> {
-    ERROR!("Hello");
     let mut pd = PageDirectory::from_token(token);
     let mut start = ptr as usize;
     let end = start + len;
-    ERROR!("Hello");
     let mut v = Vec::new();
-    ERROR!("Hello");
-    WARN!("rotating {:X} , {:X}",start,end);
     while start < end {
-        WARN!("rotating {:X} , {:X}",start,end);
         let start_va = VirtAddr::from(start);
         let mut vpn : usize = start_va.floor().into();
         let ppn = pd

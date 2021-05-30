@@ -7,14 +7,14 @@ use crate::sbi::{console_getchar, console_putchar};
 use crate::task::suspend_current_and_run_next;
 
 impl File for Stdin {
+    //if c == 0 ,return -2
     fn read(&self, mut user_buf: ProgramBuffer) -> usize {
         assert_eq!(user_buf.len(), 1);
         let mut c: usize;
         loop {
             c = console_getchar();
             if c == 0 {
-                suspend_current_and_run_next();
-                continue;
+                return 0xfffffffffffffffd
             } else {
                 break;
             }

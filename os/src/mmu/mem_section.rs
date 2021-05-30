@@ -482,9 +482,9 @@ impl MemSection{
 }
 
 pub fn print_kernel_info(){
-    DEBUG!(".text : {:X} - {:X}",stext as usize,etext as usize);
-    DEBUG!(".rodata : {:X} - {:X}",srodata as usize,erodata as usize);
-    DEBUG!(".data : {:X} - {:X}",sdata as usize,edata as usize);
-    DEBUG!(".bss : {:X} - {:X}",sbss_with_stack as usize,ebss as usize);
-    DEBUG!(".ekernel : {:X} ",ekernel as usize);
+    println!(".text : {:X} - {:X}",stext as usize,etext as usize);
+    println!(".rodata : {:X} - {:X}",srodata as usize,erodata as usize);
+    println!(".data : {:X} - {:X}",sdata as usize,edata as usize);
+    println!(".bss : {:X} - {:X}",sbss_with_stack as usize,ebss as usize);
+    println!(".ekernel : {:X} ",ekernel as usize);
 }
