@@ -196,6 +196,7 @@ fn create_volume_from_part(id: usize) -> Volume<PartitionDevice> {
     let active = mbr.partitions[0].is_active();
     LOG!("Master Boot Record Read, partition {} status => {}", id
             , if active {"active"} else { "inactive" });
+    LOG!("Boot Record {:?}", mbr);
     if !active {
         ERROR!("No active partition found in block device, the system might fail!")
     } else {
