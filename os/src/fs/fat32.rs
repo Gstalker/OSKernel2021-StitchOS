@@ -185,32 +185,51 @@ use crate::syscall::fs::OpenFlags;
 pub struct SysFile<'a>(kfat32::file::File<'a, PartitionDevice>, OpenFlags);
 
 impl<'a> SysFile<'a> {
-    fn new(file: kfat32::file::File<'a, PartitionDevice>, wt: OpenFlags) -> Self {
+    pub fn new(file: kfat32::file::File<'a, PartitionDevice>, wt: OpenFlags) -> Self {
         SysFile(file, wt)
     }
 }
 
+pub struct SysDir();
+
 impl<'a> crate::fs::File for SysFile<'a> {
     fn read(&self, buf: ProgramBuffer) -> usize {
-        let mut len: usize = 0;
-        for buffer in buf.buffers {
-            len += self.0.read(buffer).unwrap();
-            if len < buffer.len() {
-                break;
+        if !self.1.contains(OpenFlags::WRONLY) {
+            let mut len: usize = 0;
+            for buffer in buf.buffers {
+                len += self.0.read(buffer).unwrap();
+                if len < buffer.len() {
+                    break;
+                }
             }
+            len
+        } else {
+            0
         }
-        len
     }
     fn write(&mut self, buf: ProgramBuffer) -> usize {
-        let mut len: usize = 0;
-        for buffer in buf.buffers {
-            len += buffer.len();
-            self.0.write(buffer, self.1.into()).unwrap();
-            if len < buffer.len() {
-                break;
+        if self.1.contains(OpenFlags::WRONLY) || self.1.contains(OpenFlags::RDWR) {
+            let mut len: usize = 0;
+            for buffer in buf.buffers {
+                len += buffer.len();
+                self.0.write(buffer, self.1.into()).unwrap();
+                if len < buffer.len() {
+                    break;
+                }
             }
+            len
+        } else {
+            0
         }
-        len
+    }
+}
+
+impl crate::fs::File for SysDir {
+    fn read(&self, buf: ProgramBuffer) -> usize {
+        0
+    }
+    fn write(&mut self, buf: ProgramBuffer) -> usize {
+        0
     }
 }
 
@@ -311,6 +330,12 @@ impl Path {
         resolve_path(&self.location, &self.root, self.path.as_str(), false).is_ok()
     }
 
+    pub fn is_file(&self) -> bool {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false)
+            .map(|file| file.is_file())
+            .unwrap_or(false)
+    }
+
     pub fn get_inode(&self) -> Result<Inode, &'static str> {
         resolve_path(&self.location, &self.root, self.path.as_str(), false)
     }
@@ -326,6 +351,56 @@ impl Path {
 
     pub fn ls(&self) -> Result<Vec<Inode>, &'static str> {
         resolve_path(&self.location, &self.root, self.path.as_str(), false).map(|entry| entry.ls())
+    }
+}
+use alloc::collections::vec_deque::VecDeque;
+pub fn create_file(
+    cwd: &Inode,
+    root: &Inode,
+    path: &str,
+    overwrite: bool,
+) -> Result<Inode, &'static str> {
+    let mut cur = if path.chars().nth(0).unwrap_or('-') == '/' {
+        cwd.clone()
+    } else {
+        root.clone()
+    };
+    let mut segs: VecDeque<&str> = path.split("/").collect();
+    let last = segs.pop_back();
+    match last {
+        Some(last) => {
+            for seg in segs.into_iter() {
+                match seg {
+                    "." | "" => {}
+                    ".." => match cur.parent {
+                        Some(node) => {
+                            cur = *node;
+                        }
+                        None => return Err("reach root dir for '..'"),
+                    },
+                    value => match cur.child(value) {
+                        Some(node) => {
+                            cur = node;
+                        }
+                        None => return Err("filename not found"),
+                    },
+                }
+            }
+            let exists = cur.child(last).map(|f| f.is_file()).unwrap_or(false);
+            if exists {
+                if overwrite {
+                    cur.delete_file(last);
+                } else {
+                    return Err("file already exists");
+                }
+            };
+            if cur.create_file(last) {
+                return Ok(cur.child(last).unwrap());
+            } else {
+                return Err("file creation failed");
+            }
+        }
+        None => Err("Empty file path"),
     }
 }
 

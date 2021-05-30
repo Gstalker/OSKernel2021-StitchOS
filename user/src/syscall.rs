@@ -20,6 +20,7 @@ const SYSCALL_BRK : usize = 214;
 const SYSCALL_MMAP : usize = 222;
 const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_MKDIR : usize = 1030;
+const SYSCALL_CLOSE: usize = 57;
 #[repr(C)]
 #[derive(Debug)]
 pub struct utsname{
@@ -92,8 +93,16 @@ pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
 // }
 
 
+pub fn sys_dup(fd: usize) -> isize {
+    syscall(SYSCALL_DUP, [fd, 0, 0])
+}
+
 pub fn sys_open(path: &str, flags: u32) -> isize {
     syscall(SYSCALL_OPEN, [path.as_ptr() as usize, flags as usize, 0])
+}
+
+pub fn sys_close(fd: usize) -> isize {
+    syscall(SYSCALL_CLOSE, [fd, 0, 0])
 }
 
 pub fn sys_brk(expend_size : usize) -> isize {
