@@ -41,13 +41,15 @@ impl BlockDevice for PartitionDevice {
         }
     }
 }
+use alloc::boxed::*;
 use kfat32::entry::EntryType;
 use lazy_static::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Inode {
     pub(crate) dir: Option<dir::Dir<'static, PartitionDevice>>,
     pub(crate) entry: Option<Entry>,
+    pub(crate) parent: Option<Box<Inode>>,
 }
 
 impl Inode {
@@ -62,6 +64,7 @@ impl Inode {
                             Some(Inode {
                                 dir: None,
                                 entry: Some(entry),
+                                parent: Some(Box::new(self.clone())),
                             })
                         }
                         EntryType::Dir => {
@@ -70,6 +73,7 @@ impl Inode {
                             Some(Inode {
                                 dir: Some(dir.cd_entry(entry).unwrap()),
                                 entry: None,
+                                parent: Some(Box::new(self.clone())),
                             })
                         }
                         _ => None,
@@ -106,6 +110,17 @@ impl Inode {
         self.dir.map(|dir| dir.open_file(name).ok()).flatten()
     }
 
+    pub fn open<'a>(&self) -> Option<kfat32::file::File<'a, PartitionDevice>> {
+        self.parent
+            .as_ref()
+            .map(|parent| parent.open_sub_inode(self))
+            .flatten()
+    }
+
+    pub fn parent(&self) -> Option<Inode> {
+        self.parent.clone().map(|par| *par)
+    }
+
     pub fn ls(&self) -> Vec<Inode> {
         DEBUG!("into ls");
         if let Some(dir) = self.dir {
@@ -117,12 +132,14 @@ impl Inode {
                     EntryType::File => result.push(Inode {
                         dir: None,
                         entry: Some(entry),
+                        parent: Some(Box::new(self.clone())),
                     }),
                     EntryType::Dir => {
                         // we knew it's a directory, so unwrap
                         result.push(Inode {
                             dir: Some(dir.cd_entry(entry).unwrap()),
                             entry: None,
+                            parent: Some(Box::new(self.clone())),
                         });
                     }
                     _ => {}
@@ -252,5 +269,103 @@ pub fn fat32_root_dir() -> Inode {
     Inode {
         entry: None,
         dir: Some(GLOBAL_VOLUME.root_dir()),
+        parent: None,
     }
+}
+/// If cwd is none, then it is equal to '/'
+pub fn fat32_path(path: &str, cwd: Option<Inode>) -> Path {
+    let root = fat32_root_dir();
+    let cwd = cwd.unwrap_or(root.clone());
+    Path::new(cwd, root, String::from(path))
+}
+
+use alloc::string::*;
+
+#[derive(Clone, Debug)]
+pub struct Path {
+    location: Inode,
+    root: Inode,
+    path: String,
+}
+
+/// lazy resolved path struct, avoid using this as much as you can
+impl Path {
+    pub fn new(cwd: Inode, root: Inode, path: String) -> Self {
+        Self {
+            location: cwd,
+            root,
+            path,
+        }
+    }
+
+    pub fn relative(&self, path: &str) -> Result<Path, &'static str> {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false)
+            .map(|res| Path::new(res, self.root.clone(), String::from(path)))
+    }
+
+    pub fn mkdirs(&self) -> Result<(), &'static str> {
+        resolve_path(&self.location, &self.root, self.path.as_str(), true).map(|_| ())
+    }
+
+    pub fn exists(&self) -> bool {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false).is_ok()
+    }
+
+    pub fn get_inode(&self) -> Result<Inode, &'static str> {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false)
+    }
+
+    pub fn open<'a>(&self) -> Result<kfat32::file::File<'a, PartitionDevice>, &'static str> {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false).and_then(|node| {
+            match node.open() {
+                Some(file) => Ok(file),
+                _ => Err("cannot open file"),
+            }
+        })
+    }
+
+    pub fn ls(&self) -> Result<Vec<Inode>, &'static str> {
+        resolve_path(&self.location, &self.root, self.path.as_str(), false).map(|entry| entry.ls())
+    }
+}
+
+fn resolve_path(
+    cwd: &Inode,
+    root: &Inode,
+    path: &str,
+    mkmode: bool,
+) -> Result<Inode, &'static str> {
+    let mut cur = if path.chars().nth(0).unwrap_or('-') == '/' {
+        cwd.clone()
+    } else {
+        root.clone()
+    };
+    for seg in path.split("/") {
+        match seg {
+            "." | "" => {}
+            ".." => match cur.parent {
+                Some(node) => {
+                    cur = *node;
+                }
+                None => return Err("reach root dir for '..'"),
+            },
+            value => match cur.child(value) {
+                Some(node) => {
+                    cur = node;
+                }
+                None => {
+                    if mkmode {
+                        if cur.create_dir(value) {
+                            cur = cur.child(value).unwrap()
+                        } else {
+                            return Err("cannot create dir");
+                        }
+                    } else {
+                        return Err("filename not found");
+                    }
+                }
+            },
+        }
+    }
+    Ok(cur)
 }
