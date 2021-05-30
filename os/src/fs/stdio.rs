@@ -9,18 +9,25 @@ use crate::task::suspend_current_and_run_next;
 impl File for Stdin {
     //if c == 0 ,return -2
     fn read(&self, mut user_buf: ProgramBuffer) -> usize {
-        assert_eq!(user_buf.len(), 1);
+        WARN!("READ_TEST");
+        let len = user_buf.len();
+        let mut i = 0;
         let mut c: usize;
-        loop {
+        while i < len {
             c = console_getchar();
             if c == 0 {
-                return 0xfffffffffffffffd
+                LOG!("READ_TEST");
+                suspend_current_and_run_next();
+                LOG!("READ_TEST");
             } else {
-                break;
+                let ch = c as u8;
+                unsafe { user_buf.buffers[i].as_mut_ptr().write_volatile(ch); }
+                i += 1;
             }
         }
-        let ch = c as u8;
-        unsafe { user_buf.buffers[0].as_mut_ptr().write_volatile(ch); }
+        WARN!("READ_TEST");
+        
+        WARN!("READ_TEST");
         1
     }
 
