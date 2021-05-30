@@ -78,7 +78,7 @@ pub fn exit_current_and_run_next(exit_code: i32) {
 
 lazy_static! {
     pub static ref INITPROC: Arc<TaskControlBlock> = {
-        let app_data = get_app_data_by_name("user_shell").unwrap();
+        let app_data = get_app_data_by_name("initproc").unwrap();
         LOG!("HELLO?");
         let app_path = Vec::from(['/' as u8]);
         Arc::new(
