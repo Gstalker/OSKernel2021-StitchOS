@@ -77,7 +77,7 @@ pub fn sleep(period_ms: usize) {
         sys_yield();
     }
 }
-pub fn pipe(pipe_fd: &mut [usize]) -> isize { sys_pipe(pipe_fd) }
+// pub fn pipe(pipe_fd: &mut [usize]) -> isize { sys_pipe(pipe_fd) }
 
 bitflags! {
     pub struct OpenFlags: u32 {

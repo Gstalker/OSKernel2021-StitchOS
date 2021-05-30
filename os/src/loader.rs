@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use lazy_static::*;
+use crate::fs::*;
 
 pub fn get_num_app() -> usize {
     extern "C" { fn _num_app(); }
@@ -46,11 +47,21 @@ lazy_static! {
 
 
 #[allow(unused)]
-pub fn get_app_data_by_name(name: &str) -> Option<&'static [u8]> {
-    let num_app = get_num_app();
-    (0..num_app)
-        .find(|&i| APP_NAMES[i] == name)
-        .map(|i| get_app_data(i))
+pub fn get_app_data_by_name(path: &str) -> Option<Vec<u8>> {
+    // let num_app = get_num_app();
+    // (0..num_app)
+    //     .find(|&i| APP_NAMES[i] == name)
+    //     .map(|i| get_app_data(i))
+    let root_dir = fat32::fat32_root_dir();
+    WARN!("here");
+    WARN!("{:?}",root_dir.ls());
+    let app_file = root_dir.open_file(path).unwrap();
+    let app_size = app_file.len();
+    let mut app_data : Vec<u8> = Vec::with_capacity(app_size);
+    unsafe{app_data.set_len(app_size)};
+    WARN!("App _data length : {:X}",app_size);
+    app_file.read(app_data.as_mut_slice()).unwrap();
+    Some(app_data)
 }
 
 pub fn list_apps() {

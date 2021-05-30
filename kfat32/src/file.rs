@@ -55,6 +55,7 @@ impl<'a, T> File<'a, T>
         let spc = self.bpb.sector_per_cluster_usize();
         let cluster_size = spc * BUFFER_SIZE;
         let mut number_of_blocks = spc;
+        // panic!("buf.len : {:X},length : {:X}",buf.len(),length);
 
         if buf.len() < length { return Err(FileError::BufTooSmall); }
 
