@@ -50,6 +50,8 @@ pub struct TaskControlBlockInner {
     pub exit_code: i32,
     // 进程打开的fd
     pub fd_table: Vec<Option<Arc<Mutex<dyn File + Send + Sync>>>>,
+    // 进程的工作目录
+    pub work_dir:  Vec<u8>,
 }
 
 impl TaskControlBlockInner {
@@ -68,7 +70,7 @@ impl TaskControlBlockInner {
     pub fn is_zombie(&self) -> bool {
         self.get_status() == TaskStatus::Zombie
     }
-    pub fn new(elf_data: &[u8], app_id: usize) -> Self {
+    pub fn new(elf_data: &[u8], app_id: usize,path : Vec<u8>) -> Self {
         // mem_area with elf program headers/trampoline/trap context/user stack
         println!("osc");
         let (mut mem_area, user_sp, entry_point) = MemArea::new_from_elf(elf_data);
@@ -102,7 +104,8 @@ impl TaskControlBlockInner {
                 Some(Arc::new(Mutex::new(Stdin))),
                 Some(Arc::new(Mutex::new(Stdout))),
                 Some(Arc::new(Mutex::new(Stdout))), // stderr
-            ]
+            ],
+            work_dir : path, 
         };
         // prepare TrapContext in user space
         println!("prepare trap");
@@ -124,9 +127,9 @@ impl TaskControlBlock {
     pub fn acquire_inner_lock(&self) -> MutexGuard<TaskControlBlockInner> {
         self.inner.lock()
     }
-    pub fn new(elf_data: &[u8]) -> Self {
+    pub fn new(elf_data: Vec<u8> ,path : Vec<u8>) -> Self {
         // mem_area with elf program headers/trampoline/trap context/user stack
-        let (mut mem_area, user_sp, entry_point) = MemArea::new_from_elf(elf_data);
+        let (mut mem_area, user_sp, entry_point) = MemArea::new_from_elf(elf_data.as_slice());
         let trap_cx_ppn = mem_area
             .get_phys_frame_by_vpn(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap()
@@ -157,6 +160,7 @@ impl TaskControlBlock {
                     // 2 -> stderr
                     Some(Arc::new(Mutex::new(Stdout))),
                 ],
+                work_dir : path,
             }),
         };
         // prepare TrapContext in user space
@@ -233,6 +237,7 @@ impl TaskControlBlock {
                 children: Vec::new(),
                 exit_code: 0,
                 fd_table: new_fd_table,
+                work_dir: parent_inner.work_dir.clone(),
             }),
         });
         // add child

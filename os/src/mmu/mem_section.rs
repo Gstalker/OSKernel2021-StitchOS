@@ -128,7 +128,7 @@ impl MemArea{
                 if ph_flags.is_read() { map_perm |= MemSectionPermission::R; }
                 if ph_flags.is_write() { map_perm |= MemSectionPermission::W; }
                 if ph_flags.is_execute() { map_perm |= MemSectionPermission::X; }
-                DEBUG!("va {} {}", start_va.0, end_va.0);
+                LOG!("va {:X} {:X}", start_va.0, end_va.0);
                 let map_area = MemSection::new(
                     start_va,
                     end_va,

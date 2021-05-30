@@ -1,17 +1,37 @@
+const SYSCALL_GETCWD : usize = 17;
+const SYSCALL_DUP    :usize = 23;
+const SYS_MOUNT : usize = 40;
+const SYS_CHIDR : usize = 49;
+const SYSCALL_OPEN: usize = 56;
+const SYS_CLOSE : usize = 57;
+const SYS_PIPE2 : usize = 59;
 const SYSCALL_READ: usize = 63;
 const SYSCALL_WRITE: usize = 64;
+const SYS_FSTATE   : usize = 80;
 const SYSCALL_EXIT: usize = 93;
 const SYSCALL_YIELD: usize = 124;
+const SYSCALL_UNAME: usize = 160;
 const SYSCALL_GET_TIME: usize = 169;
 const SYSCALL_GETPID: usize = 172;
 const SYSCALL_GETPPID: usize = 173;
 const SYSCALL_FORK: usize = 220;
 const SYSCALL_EXEC: usize = 221;
-const SYSCALL_WAITPID: usize = 260;
-const SYSCALL_PIPE: usize = 59;
-const SYSCALL_OPEN: usize = 56;
 const SYSCALL_BRK : usize = 214;
+const SYSCALL_MMAP : usize = 222;
+const SYSCALL_WAITPID: usize = 260;
 const SYSCALL_MKDIR : usize = 1030;
+#[repr(C)]
+#[derive(Debug)]
+pub struct utsname{
+    pub sysname : [u8;65],
+    pub nodename : [u8;65],
+    pub release : [u8;65],
+    pub version : [u8;65],
+    pub machine : [u8;65],
+    pub domainname : [u8;65],
+}
+
+
 
 fn syscall(id: usize, args: [usize; 3]) -> isize {
     let mut ret: isize;
@@ -66,9 +86,10 @@ pub fn sys_exec(path: &str) -> isize {
 pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
     syscall(SYSCALL_WAITPID, [pid as usize, exit_code as usize, 0])
 }
-pub fn sys_pipe(pipe: &mut [usize]) -> isize {
-    syscall(SYSCALL_PIPE, [pipe.as_mut_ptr() as usize, 0, 0])
-}
+
+// pub fn sys_pipe(pipe: &mut [usize]) -> isize {
+//     syscall(SYSCALL_PIPE, [pipe.as_mut_ptr() as usize, 0, 0])
+// }
 
 
 pub fn sys_open(path: &str, flags: u32) -> isize {
@@ -77,4 +98,8 @@ pub fn sys_open(path: &str, flags: u32) -> isize {
 
 pub fn sys_brk(expend_size : usize) -> isize {
     syscall(SYSCALL_BRK, [expend_size,0,0])
+}
+
+pub fn sys_uname(us : *mut utsname) -> isize{
+    syscall(SYSCALL_UNAME, [us as usize,0,0])
 }

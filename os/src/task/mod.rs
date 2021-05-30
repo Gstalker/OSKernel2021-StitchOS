@@ -9,6 +9,7 @@ use crate::loader::{get_app_data_by_name};
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 use controller::pop_task;
 use lazy_static::*;
 
@@ -76,11 +77,17 @@ pub fn exit_current_and_run_next(exit_code: i32) {
 }
 
 lazy_static! {
-    pub static ref INITPROC: Arc<TaskControlBlock> = Arc::new(
-        TaskControlBlock::new(get_app_data_by_name("initproc").unwrap())
-    );
+    pub static ref INITPROC: Arc<TaskControlBlock> = {
+        let app_data = get_app_data_by_name("brk").unwrap();
+        LOG!("HELLO?");
+        let app_path = Vec::from(['/' as u8]);
+        Arc::new(
+            TaskControlBlock::new(app_data,app_path)
+        )
+    };
 }
 
 pub fn add_initproc() {
     add_task(INITPROC.clone());
+    LOG!("HELLO?");
 }

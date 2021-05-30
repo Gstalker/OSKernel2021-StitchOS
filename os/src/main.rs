@@ -54,24 +54,25 @@ pub fn rust_main() -> ! {
 
     // test codes for fat32 file system -- disable this if not in use
 
-    LOG!("start fs");
+    // LOG!("start fs");
 
-    let mut root = fs::fat32::fat32_root_dir();
-    println!("{:?}", root.ls());
-    println!("{}", root.create_file("blank.txt"));
+    // let mut root = fs::fat32::fat32_root_dir();
+    // println!("{:?}", root.ls());
+    // println!("{}", root.create_file("blank.txt"));
 
-    let test = root.open_file("test.txt").unwrap();
-    test.len();
+    // let test = root.open_file("test.txt").unwrap();
+    // test.len();
 
-    let dir = root.child("dir2").unwrap();
+    // let dir = root.child("dir2").unwrap();
 
-    println!("inner {:?}", dir);
-    println!("inner files {:?}", dir.ls());
-    println!("into first task");
+    // println!("inner {:?}", dir);
+    // println!("inner files {:?}", dir.ls());
+    // println!("into first task");
 
     // end of file system test
+    
 
     println!("second maybe");
-    // task::run_tasks();
+    task::run_tasks();
     panic!("Unreachable in rust_main!");
 }

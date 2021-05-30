@@ -11,6 +11,7 @@ mod lang_items;
 #[macro_use]
 extern crate bitflags;
 
+pub use syscall::utsname;
 use syscall::*;
 use buddy_system_allocator::LockedHeap;
 
@@ -77,7 +78,7 @@ pub fn sleep(period_ms: usize) {
         sys_yield();
     }
 }
-pub fn pipe(pipe_fd: &mut [usize]) -> isize { sys_pipe(pipe_fd) }
+// pub fn pipe(pipe_fd: &mut [usize]) -> isize { sys_pipe(pipe_fd) }
 
 bitflags! {
     pub struct OpenFlags: u32 {
@@ -91,4 +92,8 @@ bitflags! {
 
 pub fn open(path: &str, flags: OpenFlags) -> isize {
     sys_open(path, flags.bits)
+}
+
+pub fn uname(us : *mut utsname) -> isize{
+    sys_uname(us)
 }
