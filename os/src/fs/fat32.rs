@@ -1,5 +1,5 @@
 use super::inode::*;
-use crate::drivers::storage::BlockDeviceImpl;
+use crate::drivers::storage::*;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::*;
@@ -10,9 +10,30 @@ use kfat32::volume::Volume;
 
 // 0 - handle to physical device, 1 - offset of partition
 #[derive(Copy, Clone, Debug)]
-pub struct PartitionDevice(usize, usize);
+pub struct PartitionDevice(usize);
 
 const SECTOR_LEN: usize = 512;
+
+pub(crate) fn read_sd(
+    buf: &mut [u8],
+    address: usize,
+    number_of_blocks: usize,
+) -> Result<usize, ()> {
+    println!("{}", Arc::strong_count(&BLOCK_DEVICE));
+    println!("{} {}", BLOCK_DEVICE.clone().1, address);
+    println!("{:X}", buf.as_ptr() as usize);
+    println!("{} {:?}", number_of_blocks, buf);
+    BLOCK_DEVICE.clone().ping();
+    let r = BLOCK_DEVICE.clone().read(buf, address, number_of_blocks).map(|_| 0usize);
+    println!("hello");
+    r
+}
+
+pub(crate) fn write_sd(buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {
+    println!("w{}", Arc::strong_count(&BLOCK_DEVICE));
+    println!("w{}", BLOCK_DEVICE.clone().1);
+    BLOCK_DEVICE.clone().write(buf, address, number_of_blocks)
+}
 
 // Dummy Device that selects SD card as block device and with a default 2048 sectors' offset against FAT32 in MBR
 impl BlockDevice for PartitionDevice {
@@ -24,10 +45,8 @@ impl BlockDevice for PartitionDevice {
         address: usize,
         number_of_blocks: usize,
     ) -> Result<usize, Self::Error> {
-        unsafe {
-            let v = &*(self.0 as *const BlockDeviceImpl);
-            v.read(buf, address + self.1 * 512, number_of_blocks)
-        }
+        println!("perform sector read 1");
+        read_sd(buf, address + self.0 * 512, number_of_blocks)
     }
     fn write(
         &self,
@@ -35,10 +54,7 @@ impl BlockDevice for PartitionDevice {
         address: usize,
         number_of_blocks: usize,
     ) -> Result<usize, Self::Error> {
-        unsafe {
-            let v = &*(self.0 as *const BlockDeviceImpl);
-            v.write(buf, address + self.1 * 512, number_of_blocks)
-        }
+        write_sd(buf, address + self.0 * 512, number_of_blocks)
     }
 }
 use alloc::boxed::*;
@@ -107,7 +123,10 @@ impl Inode {
     }
 
     pub fn open_file<'a>(&self, name: &str) -> Option<kfat32::file::File<'a, PartitionDevice>> {
-        self.dir.map(|dir| dir.open_file(name).ok()).flatten()
+        println!("open");
+        let f = self.dir.map(|dir| {println!("{:?}", dir); dir.open_file(name).ok()}).flatten();
+        println!("out open");
+        f
     }
 
     pub fn open<'a>(&self) -> Option<kfat32::file::File<'a, PartitionDevice>> {
@@ -271,7 +290,6 @@ fn create_volume_from_part(id: usize) -> Volume<PartitionDevice> {
         mbr.partitions[0].start_sector as usize
     };
     Volume::new(PartitionDevice(
-        Arc::as_ptr(&dev) as *const _ as usize,
         offset,
     ))
 }
@@ -285,6 +303,7 @@ pub fn fat32_label() -> &'static str {
 }
 
 pub fn fat32_root_dir() -> Inode {
+    println!("{:?}", GLOBAL_VOLUME.root_dir());
     Inode {
         entry: None,
         dir: Some(GLOBAL_VOLUME.root_dir()),
@@ -353,7 +372,7 @@ impl Path {
         resolve_path(&self.location, &self.root, self.path.as_str(), false).map(|entry| entry.ls())
     }
 }
-use alloc::collections::vec_deque::VecDeque;
+// use alloc::collections::vec_deque::VecDeque;
 pub fn create_file(
     cwd: &Inode,
     root: &Inode,
@@ -365,8 +384,8 @@ pub fn create_file(
     } else {
         root.clone()
     };
-    let mut segs: VecDeque<&str> = path.split("/").collect();
-    let last = segs.pop_back();
+    let mut segs: Vec<&str> = path.split("/").collect();
+    let last = segs.pop();
     match last {
         Some(last) => {
             for seg in segs.into_iter() {
