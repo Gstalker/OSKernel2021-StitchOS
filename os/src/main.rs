@@ -47,8 +47,8 @@ pub fn rust_main() -> ! {
     mmu::init();
     println!("[kernel] back to world!");
     //mmu::remap_test();
-    //task::add_initproc();
-    task::run_oj();
+    task::add_initproc();
+    //task::run_oj();
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
