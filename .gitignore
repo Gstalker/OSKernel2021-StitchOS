@@ -9,3 +9,4 @@ user/Cargo.lock
 kfat32/target/*
 kfat32/.idea/*
 kfat32/Cargo.lock
+k210.bin
