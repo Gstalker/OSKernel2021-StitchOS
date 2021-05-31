@@ -15,6 +15,8 @@ pub struct FAT<T>
     buffer: [u8; BUFFER_SIZE],
 }
 
+const shared_buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+
 impl<T> FAT<T>
     where T: BlockDevice + Clone + Copy,
           <T as BlockDevice>::Error: core::fmt::Debug {
@@ -26,7 +28,7 @@ impl<T> FAT<T>
             previous_cluster: 0,
             current_cluster: 0,
             next_cluster: None,
-            buffer: [0; BUFFER_SIZE],
+            buffer: shared_buffer,
         }
     }
 

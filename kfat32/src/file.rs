@@ -46,6 +46,8 @@ pub struct ReadIter<'a, T>
     need_count: usize,
 }
 
+const read_iter_shared: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+
 impl<'a, T> File<'a, T>
     where T: BlockDevice + Clone + Copy,
           <T as BlockDevice>::Error: core::fmt::Debug {

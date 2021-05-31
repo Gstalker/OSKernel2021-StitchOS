@@ -18,6 +18,7 @@ use lazy_static::*;
 use super::BlockDevice;
 use core::convert::TryInto;
 
+#[derive(Debug)]
 pub struct SDCard<SPI> {
     spi: SPI,
     spi_cs: u32,
@@ -591,7 +592,7 @@ impl</*'a,*/ X: SPI> SDCard</*'a,*/ X> {
      */
     pub fn read_sector(&self, data_buf: &mut [u8], sector: u32) -> Result<(), ()> {
         /* Send CMD17 to read one block, or CMD18 for multiple */
-        DEBUG!("red sector {}", sector);
+        DEBUG!("DEBUG {}", sector);
         let flag = if data_buf.len() == SEC_LEN {
             self.send_cmd(CMD::CMD17, sector, 0);
             false
@@ -736,21 +737,28 @@ fn init_sdcard() -> SDCard<SPIImpl<SPI0>> {
     sd
 }
 
-pub struct SDCardWrapper(Mutex<SDCard<SPIImpl<SPI0>>>);
+pub struct SDCardWrapper(pub Mutex<SDCard<SPIImpl<SPI0>>>, pub u32);
 
 impl SDCardWrapper {
     pub fn new() -> Self {
-        Self(Mutex::new(init_sdcard()))
+        Self(Mutex::new(init_sdcard()), 7046)
     }
 }
 
-impl BlockDevice for SDCardWrapper {
-    type Error = ();
-
-    fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<usize, Self::Error> {
-        self.0.lock().read_sector(buf, (address/ SEC_LEN) as u32).map(|_| 0usize)
+impl SDCardWrapper {
+    pub fn ping(&self) {
+        DEBUG!("pong");
     }
-    fn write(&self, buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, Self::Error> {
+
+    pub fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {
+        DEBUG!("perform sector read");
+        DEBUG!("output plz");
+
+        let ret = self.0.lock().read_sector(buf, (address/ SEC_LEN) as u32).map(|_| 0usize);
+        DEBUG!("sector read success");
+        ret
+    }
+    pub fn write(&self, buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {
         self.0.lock().write_sector(buf, (address / SEC_LEN) as u32).map(|_| 0usize)
     }
 }

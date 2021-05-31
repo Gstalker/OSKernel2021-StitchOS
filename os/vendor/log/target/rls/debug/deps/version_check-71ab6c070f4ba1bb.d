@@ -1,0 +1,10 @@
+/home/gstalker/Desktop/k210OS/os/vendor/log/target/rls/debug/deps/version_check-71ab6c070f4ba1bb.rmeta: /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/lib.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/version.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/channel.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/date.rs
+
+/home/gstalker/Desktop/k210OS/os/vendor/log/target/rls/debug/deps/libversion_check-71ab6c070f4ba1bb.rlib: /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/lib.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/version.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/channel.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/date.rs
+
+/home/gstalker/Desktop/k210OS/os/vendor/log/target/rls/debug/deps/version_check-71ab6c070f4ba1bb.d: /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/lib.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/version.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/channel.rs /home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/date.rs
+
+/home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/lib.rs:
+/home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/version.rs:
+/home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/channel.rs:
+/home/gstalker/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/version_check-0.9.3/src/date.rs:

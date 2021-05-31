@@ -25,7 +25,7 @@ mod fs;
 mod mmu;
 mod drivers;
 global_asm!(include_str!("entry.asm"));
-// global_asm!(include_str!("link_app.S"));
+global_asm!(include_str!("link_app.S"));
 
 fn clear_bss() {
     extern "C" {
@@ -45,7 +45,6 @@ pub fn rust_main() -> ! {
     WARN!("WARN test");
     println!("[kernel] Hello, world!");
     mmu::init();
-    mmu::print_kernel_info();
     println!("[kernel] back to world!");
     //mmu::remap_test();
     task::add_initproc();

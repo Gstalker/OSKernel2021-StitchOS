@@ -12,7 +12,6 @@ use crate::tool::{
 use crate::entry::NameType;
 use crate::file::File;
 use crate::fat::FAT;
-
 /// Define DirError
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum DirError {
@@ -332,6 +331,8 @@ pub struct DirIter<'a, T>
     buffer: [u8; BUFFER_SIZE],
 }
 
+const dir_iter_buffer : [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+
 impl<'a, T> DirIter<'a, T>
     where T: BlockDevice + Clone + Copy,
           <T as BlockDevice>::Error: core::fmt::Debug {
@@ -347,7 +348,7 @@ impl<'a, T> DirIter<'a, T>
             offset: bpb.offset(fat.current_cluster),
             sector_offset: 0,
             index: 0,
-            buffer: [0; BUFFER_SIZE],
+            buffer: dir_iter_buffer,
         }
     }
 
