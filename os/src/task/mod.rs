@@ -5,7 +5,10 @@ mod controller;
 mod processor;
 mod pid;
 
-use crate::loader::{get_app_data_by_name};
+use crate::loader::{
+    get_app_data_by_name,
+    get_app_data_by_name_oj,
+};
 use switch::__switch;
 use task::{TaskControlBlock, TaskStatus};
 use alloc::sync::Arc;
@@ -78,7 +81,7 @@ pub fn exit_current_and_run_next(exit_code: i32) {
 
 lazy_static! {
     pub static ref INITPROC: Arc<TaskControlBlock> = {
-        let app_data = get_app_data_by_name("initproc").unwrap();
+        let app_data = get_app_data_by_name_oj("initproc").unwrap();
         DEBUG!("HELLO?");
         let app_path = Vec::from(['/' as u8]);
         Arc::new(
@@ -90,4 +93,55 @@ lazy_static! {
 pub fn add_initproc() {
     add_task(INITPROC.clone());
     DEBUG!("HELLO?");
+}
+
+pub fn run_oj(){
+    add_task_oj("brk");
+    add_task_oj("chdir");
+    add_task_oj("clone");
+    add_task_oj("close");
+    add_task_oj("dup");
+    add_task_oj("dup2");
+    add_task_oj("execve");
+    add_task_oj("exit");
+    add_task_oj("fork");
+    add_task_oj("fstat");
+    add_task_oj("getcwd");
+    add_task_oj("getdents");
+    add_task_oj("getpid");
+    add_task_oj("getppid");
+    add_task_oj("gettimeofday");
+    add_task_oj("mkdir");
+    add_task_oj("mmap");
+    add_task_oj("mount");
+    add_task_oj("munmap");
+    add_task_oj("open");
+    add_task_oj("openat");
+    add_task_oj("pipe");
+    add_task_oj("read");
+    add_task_oj("sleep");
+    add_task_oj("times");
+    add_task_oj("umount");
+    add_task_oj("uname");
+    add_task_oj("unlink");
+    add_task_oj("wait");
+    add_task_oj("waitpid");
+    add_task_oj("write");
+    add_task_oj("yield");
+}
+
+#[allow(unused)]
+pub fn add_task_oj(path : &str){
+    if let Some(app_data) = get_app_data_by_name_oj(path){
+        DEBUG!("HELLO?");
+        let app_path = Vec::from(['/' as u8]);
+        let task = Arc::new(
+            TaskControlBlock::new(app_data,app_path)
+        );
+        add_task(task);
+    }
+    else{
+        ERROR!("Couldn't add tasl : {}",path);
+    }
+    
 }

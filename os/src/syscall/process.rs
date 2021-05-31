@@ -89,12 +89,12 @@ pub fn sys_uname(us : *mut utsname) -> isize{
         let mut version:[u8;65] = [0u8;65];
         let mut machine:[u8;65] = [0u8;65];
         let mut domainname:[u8;65] = [0u8;65];
-        sysname.copy_from_slice("rCore\x00".as_bytes());
-        nodename.copy_from_slice("StitchOS\x00".as_bytes());
-        release.copy_from_slice("Tropical Depression\x00".as_bytes());
-        version.copy_from_slice("StitchOS 0.11\x00".as_bytes());
-        machine.copy_from_slice("Kendryte K210\x00".as_bytes());
-        domainname.copy_from_slice("CSU/StitchOS\x00".as_bytes());
+        sysname[0..6].copy_from_slice("rCore\x00".as_bytes());
+        nodename[0..9].copy_from_slice("StitchOS\x00".as_bytes());
+        release[0..20].copy_from_slice("Tropical Depression\x00".as_bytes());
+        version[0..14].copy_from_slice("StitchOS 0.11\x00".as_bytes());
+        machine[0..14].copy_from_slice("Kendryte K210\x00".as_bytes());
+        domainname[0..13].copy_from_slice("CSU/StitchOS\x00".as_bytes());
         utsname{
             sysname ,
             nodename,

@@ -72,6 +72,32 @@ pub fn get_app_data_by_name(path: &str) -> Option<Vec<u8>> {
     }
 }
 
+#[allow(unused)]
+pub fn get_app_data_by_name_oj(path: &str) -> Option<Vec<u8>> {
+    // let num_app = get_num_app();
+    // (0..num_app)
+    //     .find(|&i| APP_NAMES[i] == name)
+    //     .map(|i| get_app_data(i))
+    let target_dir = fat32::fat32_path("/riscv", None);
+    DEBUG!("ok {:?}", root_dir);
+    DEBUG!("PATH PTR   {:X}",path.as_ptr() as usize);
+    if let Some(app_file) = target_dir.get_inode().ok().unwrap().open_file(path){
+        DEBUG!("OPEN FINISHED");
+        let app_size = app_file.len();
+        DEBUG!("len get!");
+        let mut app_data : Vec<u8> = Vec::with_capacity(app_size);
+        
+        unsafe{app_data.set_len(app_size)};
+        DEBUG!("APP_DATA: {:X}",app_data.as_mut_slice().as_ptr() as usize);
+        DEBUG!("App _data length : {:X}",app_size);
+        app_file.read(app_data.as_mut_slice()).unwrap();
+        Some(app_data)
+    }
+    else{
+        None
+    }
+}
+
 pub fn list_apps() {
     println!("/**** APPS ****");
     for app in APP_NAMES.iter() {
