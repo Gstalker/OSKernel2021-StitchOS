@@ -592,7 +592,7 @@ impl</*'a,*/ X: SPI> SDCard</*'a,*/ X> {
      */
     pub fn read_sector(&self, data_buf: &mut [u8], sector: u32) -> Result<(), ()> {
         /* Send CMD17 to read one block, or CMD18 for multiple */
-        LOG!("red sector {}", sector);
+        DEBUG!("DEBUG {}", sector);
         let flag = if data_buf.len() == SEC_LEN {
             self.send_cmd(CMD::CMD17, sector, 0);
             false
@@ -747,15 +747,15 @@ impl SDCardWrapper {
 
 impl SDCardWrapper {
     pub fn ping(&self) {
-        println!("pong");
+        DEBUG!("pong");
     }
 
     pub fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {
-        println!("perform sector read");
-        println!("output plz");
+        DEBUG!("perform sector read");
+        DEBUG!("output plz");
 
         let ret = self.0.lock().read_sector(buf, (address/ SEC_LEN) as u32).map(|_| 0usize);
-        println!("sector read success");
+        DEBUG!("sector read success");
         ret
     }
     pub fn write(&self, buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {

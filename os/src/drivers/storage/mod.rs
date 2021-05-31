@@ -23,5 +23,5 @@ pub fn block_device_test() {
         block_device.read(&mut read_buffer, i * 512, 0);
         assert_eq!(write_buffer, read_buffer);
     }
-    println!("block device test passed!");
+    DEBUG!("block device test passed!");
 }

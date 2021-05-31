@@ -128,7 +128,7 @@ impl MemArea{
                 if ph_flags.is_read() { map_perm |= MemSectionPermission::R; }
                 if ph_flags.is_write() { map_perm |= MemSectionPermission::W; }
                 if ph_flags.is_execute() { map_perm |= MemSectionPermission::X; }
-                LOG!("va {:X} {:X}", start_va.0, end_va.0);
+                DEBUG!("va {:X} {:X}", start_va.0, end_va.0);
                 let map_area = MemSection::new(
                     start_va,
                     end_va,
@@ -162,13 +162,13 @@ impl MemArea{
         //guard page
         let heap_start = user_stack_bottom + PAGE_SIZE * 0x10000;
         let heap_end = heap_start;
-        WARN!("mapp heap_section");
+        DEBUG!("mapp heap_section");
         ma.heap_section = Some(HeapSection::new(
             heap_start.into(), 
             heap_end.into(),
             &mut ma.page_directory,
         ));
-        WARN!("mapp heap_section complete!");
+        DEBUG!("mapp heap_section complete!");
 
         ma.push(MemSection::new(
             TRAP_CONTEXT.into(),

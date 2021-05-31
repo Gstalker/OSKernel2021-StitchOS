@@ -19,19 +19,19 @@ pub(crate) fn read_sd(
     address: usize,
     number_of_blocks: usize,
 ) -> Result<usize, ()> {
-    println!("{}", Arc::strong_count(&BLOCK_DEVICE));
-    println!("{} {}", BLOCK_DEVICE.clone().1, address);
-    println!("{:X}", buf.as_ptr() as usize);
-    println!("{} {:?}", number_of_blocks, buf);
+    DEBUG!("{}", Arc::strong_count(&BLOCK_DEVICE));
+    DEBUG!("{} {}", BLOCK_DEVICE.clone().1, address);
+    DEBUG!("{:X}", buf.as_ptr() as usize);
+    DEBUG!("{} {:?}", number_of_blocks, buf);
     BLOCK_DEVICE.clone().ping();
     let r = BLOCK_DEVICE.clone().read(buf, address, number_of_blocks).map(|_| 0usize);
-    println!("hello");
+    DEBUG!("hello");
     r
 }
 
 pub(crate) fn write_sd(buf: &[u8], address: usize, number_of_blocks: usize) -> Result<usize, ()> {
-    println!("w{}", Arc::strong_count(&BLOCK_DEVICE));
-    println!("w{}", BLOCK_DEVICE.clone().1);
+    DEBUG!("w{}", Arc::strong_count(&BLOCK_DEVICE));
+    DEBUG!("w{}", BLOCK_DEVICE.clone().1);
     BLOCK_DEVICE.clone().write(buf, address, number_of_blocks)
 }
 
@@ -45,7 +45,7 @@ impl BlockDevice for PartitionDevice {
         address: usize,
         number_of_blocks: usize,
     ) -> Result<usize, Self::Error> {
-        println!("perform sector read 1");
+        DEBUG!("perform sector read 1 {:X}",buf.as_ptr() as usize);
         read_sd(buf, address + self.0 * 512, number_of_blocks)
     }
     fn write(
@@ -123,9 +123,14 @@ impl Inode {
     }
 
     pub fn open_file<'a>(&self, name: &str) -> Option<kfat32::file::File<'a, PartitionDevice>> {
-        println!("open");
-        let f = self.dir.map(|dir| {println!("{:?}", dir); dir.open_file(name).ok()}).flatten();
-        println!("out open");
+        DEBUG!("open {:X}",name.as_ptr() as usize);
+        let f = self.dir.map(|d| {
+            DEBUG!("DIR DIR DIR{:?}", d); 
+            let result = d.open_file(name).ok();
+            DEBUG!("END OPEN");
+            result
+        }).flatten();
+        DEBUG!("out open");
         f
     }
 
@@ -303,7 +308,7 @@ pub fn fat32_label() -> &'static str {
 }
 
 pub fn fat32_root_dir() -> Inode {
-    println!("{:?}", GLOBAL_VOLUME.root_dir());
+    DEBUG!("{:?}", GLOBAL_VOLUME.root_dir());
     Inode {
         entry: None,
         dir: Some(GLOBAL_VOLUME.root_dir()),

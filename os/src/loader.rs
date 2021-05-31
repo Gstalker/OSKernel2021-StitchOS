@@ -53,12 +53,17 @@ pub fn get_app_data_by_name(path: &str) -> Option<Vec<u8>> {
     //     .find(|&i| APP_NAMES[i] == name)
     //     .map(|i| get_app_data(i))
     let root_dir = fat32::fat32_root_dir();
-    println!("ok {:?}", root_dir);
+    DEBUG!("ok {:?}", root_dir);
+    DEBUG!("PATH PTR   {:X}",path.as_ptr() as usize);
     if let Some(app_file) = root_dir.open_file(path){
+        DEBUG!("OPEN FINISHED");
         let app_size = app_file.len();
+        DEBUG!("len get!");
         let mut app_data : Vec<u8> = Vec::with_capacity(app_size);
+        
         unsafe{app_data.set_len(app_size)};
-        WARN!("App _data length : {:X}",app_size);
+        DEBUG!("APP_DATA: {:X}",app_data.as_mut_slice().as_ptr() as usize);
+        DEBUG!("App _data length : {:X}",app_size);
         app_file.read(app_data.as_mut_slice()).unwrap();
         Some(app_data)
     }

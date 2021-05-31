@@ -12,7 +12,6 @@ use crate::tool::{
 use crate::entry::NameType;
 use crate::file::File;
 use crate::fat::FAT;
-
 /// Define DirError
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum DirError {
