@@ -1,4 +1,5 @@
 all:
+	@cd ./os && cargo vendor --offline
 	@cd ./os && make build BOARD=k210
 	@cp ./os/target/riscv64gc-unknown-none-elf/release/os ./k210.bin
 
