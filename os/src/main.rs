@@ -25,7 +25,9 @@ mod fs;
 mod mmu;
 mod drivers;
 global_asm!(include_str!("entry.asm"));
-global_asm!(include_str!("link_app.S"));
+
+// 未来更新vfs之后再启用这一行
+// global_asm!(include_str!("link_app.S"));
 
 fn clear_bss() {
     extern "C" {

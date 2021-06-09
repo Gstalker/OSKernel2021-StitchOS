@@ -12,12 +12,11 @@ const DL: u8 = 0x7fu8;
 const BS: u8 = 0x08u8;
 
 use alloc::string::String;
-use user_lib::{fork, exec, waitpid};
+use user_lib::{fork, exec, waitpid,chdir};
 use user_lib::console::getchar;
 
 #[no_mangle]
 pub fn main() -> i32 {
-    println!("Rust user shell");
     let mut line: String = String::new();
     print!(">> ");
     loop {
@@ -30,7 +29,7 @@ pub fn main() -> i32 {
                     let pid = fork();
                     if pid == 0 {
                         // child process
-                        if exec(line.as_str()) == -1 {
+                        if command(line) == -1 {
                             println!("Error when executing!");
                             return -4;
                         }
@@ -57,6 +56,29 @@ pub fn main() -> i32 {
                 print!("{}", c as char);
                 line.push(c as char);
             }
+        }
+    }
+}
+
+pub fn command(tar : String) -> isize{
+    let mut iter = tar.split_ascii_whitespace();
+    let root = match iter.next() {
+        Some(command) => command,
+        None => return -1,
+    };
+    match root {
+        "ls" => {
+            println!("ls unsported now!");
+            -1
+        }
+        "cd" => {
+            match iter.next(){
+                Some(path) => chdir(path),
+                None => -1,
+            }
+        }
+        _ => {
+            exec(root)
         }
     }
 }

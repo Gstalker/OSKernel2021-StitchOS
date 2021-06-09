@@ -188,6 +188,8 @@ impl TaskControlBlock {
         let mem_area = &mut inner.mem_area;
         mem_area.brk(expend_size)
     }
+
+    //notice that: 子进程的工作目录会继承[父进程启动子进程时]的工作目录
     pub fn exec(&self, elf_data: &[u8]) {
         // mem_area with elf program headers/trampoline/trap context/user stack
         let (mut mem_area, user_sp, entry_point) = MemArea::new_from_elf(elf_data);

@@ -9,6 +9,7 @@ use crate::mmu::{
     translated_str,
     translated_refmut,
     translated_ref,
+    translated_byte_buffer,
 };
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -67,49 +68,6 @@ pub fn sys_exec(path: *const u8) -> isize {
     } else {
         -1
     }
-}
-
-#[repr(C)]
-pub struct utsname{
-    pub sysname : [u8;65],
-    pub nodename : [u8;65],
-    pub release : [u8;65],
-    pub version : [u8;65],
-    pub machine : [u8;65],
-    pub domainname : [u8;65],
-}
-
-
-// 缺少校验逻辑：如果这个指针是无效指针呢？
-pub fn sys_uname(us : *mut utsname) -> isize{
-    let UTSNAME : utsname = {
-        let mut sysname:[u8;65] = [0u8;65];
-        let mut nodename:[u8;65] = [0u8;65];
-        let mut release:[u8;65] = [0u8;65];
-        let mut version:[u8;65] = [0u8;65];
-        let mut machine:[u8;65] = [0u8;65];
-        let mut domainname:[u8;65] = [0u8;65];
-        ERROR!("hello?");
-        sysname[0..6].copy_from_slice("rCore\x00".as_bytes());
-        nodename[0..9].copy_from_slice("StitchOS\x00".as_bytes());
-        release[0..20].copy_from_slice("Tropical Depression\x00".as_bytes());
-        version[0..14].copy_from_slice("StitchOS 0.11\x00".as_bytes());
-        machine[0..14].copy_from_slice("Kendryte K210\x00".as_bytes());
-        domainname[0..13].copy_from_slice("CSU/StitchOS\x00".as_bytes());
-        ERROR!("HELLO?");
-        utsname{
-            sysname ,
-            nodename,
-            release ,
-            version ,
-            machine ,
-            domainname,
-        }
-    };
-    let task = current_task().unwrap();
-    let inner = task.acquire_inner_lock();
-    *translated_refmut(inner.mem_area.token(), us) = UTSNAME;
-    0
 }
 
 /// If there is not a child process whose pid is same as given, return -1.

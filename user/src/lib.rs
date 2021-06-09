@@ -97,3 +97,7 @@ pub fn open(path: &str, flags: OpenFlags) -> isize {
 pub fn uname(us : *mut utsname) -> isize{
     sys_uname(us)
 }
+
+pub fn chdir(path : &str) -> isize{ 
+    sys_chdir(path)
+}
